@@ -11,24 +11,27 @@ from typing import List, Literal
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# --- OUTPUT MODELS ---
+# -------------------------------------------------
+# OUTPUT MODELS
+# -------------------------------------------------
 class ExtractedIntelligence(BaseModel):
-    bankAccounts: List[str] = Field(description="ALL bank accounts found in the ENTIRE history", default=[])
-    upiIds: List[str] = Field(description="ALL UPI IDs found in the ENTIRE history", default=[])
-    phishingLinks: List[str] = Field(description="ALL malicious links found in the ENTIRE history", default=[])
-    phoneNumbers: List[str] = Field(description="ALL phone numbers found in the ENTIRE history", default=[])
-    suspiciousKeywords: List[str] = Field(description="Keywords indicating scam", default=[])
+    bankAccounts: List[str] = Field(default=[])
+    upiIds: List[str] = Field(default=[])
+    phishingLinks: List[str] = Field(default=[])
+    phoneNumbers: List[str] = Field(default=[])
+    suspiciousKeywords: List[str] = Field(default=[])
 
 class AgentDecision(BaseModel):
-    scamDetected: bool = Field(description="True ONLY for clear scams. False for standard OTPs/Receipts.")
-    conversationStatus: Literal["ONGOING", "FINISHED"] = Field(
-        description="FINISHED if intel found or scammer stops. ONGOING to get more."
-    )
-    replyText: str = Field(description="Response to sender. Empty string if Safe.")
+    scamDetected: bool
+    conversationStatus: Literal["ONGOING", "FINISHED"]
+    replyText: str
     extractedIntelligence: ExtractedIntelligence
-    agentNotes: str = Field(description="Log the Persona used and reasoning.")
+    agentNotes: str
 
-# --- SYSTEM PROMPT (FULL – NO PLACEHOLDERS) ---
+
+# -------------------------------------------------
+# SYSTEM PROMPT (FULL – NO PLACEHOLDERS)
+# -------------------------------------------------
 SYSTEM_PROMPT = """
 You are an Agentic Honeypot AI operating inside a judge-evaluated, production-grade fraud detection system.
 
@@ -52,7 +55,6 @@ PHASE 0 — ABSOLUTE OUTPUT CONSTRAINTS
 ════════════════════════════════════════
 PHASE 1 — PROGRESSIVE SCAM DETECTION
 ════════════════════════════════════════
-
 
 Scam detection is PROGRESSIVE, not binary.
 
@@ -183,95 +185,99 @@ FINAL PRINCIPLES
 • Callback readiness > verbosity
 """
 
+
+# -------------------------------------------------
+# INTERNAL HELPER (REQUIRED FIX)
+# -------------------------------------------------
+def _clean_json(text: str) -> str:
+    text = text.strip()
+    if text.startswith("```"):
+        parts = text.split("```")
+        if len(parts) >= 2:
+            text = parts[1]
+    return text.strip()
+
+
+# -------------------------------------------------
+# AGENT ENGINE
+# -------------------------------------------------
 class AgentEngine:
     def __init__(self):
         self.api_key = os.getenv("GOOGLE_API_KEY")
         if not self.api_key:
             raise ValueError("GOOGLE_API_KEY not found")
+
         self.client = genai.Client(api_key=self.api_key)
         self.model_name = "gemini-2.0-flash"
 
     def process_message(self, incoming_msg: str, history: list, sender_type: str) -> AgentDecision:
-        logger.info(f"🧠 Agent thinking on: {incoming_msg[:50]}...")
+        logger.info("🧠 Agent processing message")
 
         if not history:
-            personas = ["Strict Lawyer", "Broke Student", "Confused Senior", "Busy Techie", "Angry Customer"]
-            random_persona = random.choice(personas)
-            intro_hint = f"CONTEXT: This is the FIRST message. If scam, adopt persona '{random_persona}'."
+            persona = random.choice(
+                ["Strict Lawyer", "Broke Student", "Confused Senior", "Busy Techie", "Angry Customer"]
+            )
+            context_hint = f"FIRST MESSAGE. If scam, adopt persona: {persona}"
         else:
-            intro_hint = "CONTEXT: History exists. STRICTLY MAINTAIN PREVIOUS PERSONA."
+            context_hint = "HISTORY EXISTS. Maintain the SAME persona."
 
         prompt_content = f"""
-        {intro_hint}
+{context_hint}
 
-        INCOMING MESSAGE: "{incoming_msg}"
-        SENDER: {sender_type}
+INCOMING MESSAGE:
+"{incoming_msg}"
 
-        FULL CONVERSATION HISTORY:
-        {json.dumps(history, indent=2)}
+SENDER TYPE:
+{sender_type}
 
-        Execute instructions now.
-        """
+FULL CONVERSATION HISTORY:
+{json.dumps(history, indent=2)}
+"""
 
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                response = self.client.models.generate_content(
-                    model=self.model_name,
-                    contents=prompt_content,
-                    config=types.GenerateContentConfig(
-                        system_instruction=SYSTEM_PROMPT,
-                        response_mime_type="application/json",
-                        response_schema=AgentDecision,
-                        temperature=0.4,
-                    )
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt_content,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    response_mime_type="application/json",
+                    response_schema=AgentDecision,
+                    temperature=0.4,
+                )
+            )
+
+            logger.info(f"🧾 RAW GEMINI RESPONSE:\n{response.text}")
+
+            if response.parsed:
+                decision = response.parsed
+            else:
+                cleaned = _clean_json(response.text)
+                decision = AgentDecision.model_validate_json(cleaned)
+
+            if decision.scamDetected and not decision.replyText.strip():
+                decision.replyText = (
+                    "Wait… who exactly are you? Why are you contacting me like this?"
                 )
 
-                decision = response.parsed if response.parsed else AgentDecision.model_validate_json(response.text)
+            intel_count = sum([
+                bool(decision.extractedIntelligence.upiIds),
+                bool(decision.extractedIntelligence.phishingLinks),
+                bool(decision.extractedIntelligence.phoneNumbers),
+                bool(decision.extractedIntelligence.bankAccounts),
+            ])
 
-                # ══════════════════════════════════════════════════════
-                # 🔥 HARD-CODED SAFETY OVERRIDES (THE "JUDGE LOCK") 🔥
-                # ══════════════════════════════════════════════════════
-                
-                # Rule 1: TOLL-FREE NUMBERS are always SAFE.
-                if "1800" in incoming_msg or "1860" in incoming_msg:
-                    decision.scamDetected = False
-                    decision.replyText = ""
-                    decision.agentNotes = "HARD RULE: 1800/1860 Toll-Free Number detected. Enforced Safe Mode."
+            if intel_count >= 2:
+                decision.conversationStatus = "FINISHED"
 
-                # Rule 2: SHORT WRONG NUMBERS (No link/grooming) are SAFE
-                # If it's short, has no links, and it's the first msg -> Ignore it
-                if len(incoming_msg.split()) < 10 and not history and not decision.extractedIntelligence.phishingLinks:
-                    keywords = ["blocked", "kyc", "pan", "upi", "verify"]
-                    # If NONE of these keywords are present, assume it's an innocent wrong number
-                    if not any(k in incoming_msg.lower() for k in keywords):
-                         decision.scamDetected = False
-                         decision.replyText = ""
-                         decision.agentNotes = "HARD RULE: Short neutral message (likely wrong number). Enforced Safe Mode."
+            return decision
 
-                # Rule 3: AI Safety Fallback (Ensures silence if Scam=False)
-                if not decision.scamDetected:
-                    decision.replyText = ""
-                    decision.agentNotes = f"Safe message. Silence enforced. | {decision.agentNotes}"
+        except Exception as e:
+            logger.error(f"❌ LLM parsing failed, fallback used: {e}")
 
-                return decision
-
-            except Exception as e:
-                if "429" in str(e) and attempt < max_retries - 1:
-                    wait_time = 2 * (attempt + 1)
-                    logger.warning(f"⚠️ Rate limit hit. Retrying in {wait_time}s...")
-                    time.sleep(wait_time)
-                    continue
-
-                logger.error("❌ LLM unavailable after retries. Using safe fallback.")
-
-                return AgentDecision(
-                    scamDetected=True if history else False,
-                    conversationStatus="ONGOING",
-                    replyText=(
-                        "I’m a bit busy right now. I’ll check this later or visit the branch directly."
-                        if history else ""
-                    ),
-                    extractedIntelligence=ExtractedIntelligence(),
-                    agentNotes="Transient LLM issue handled. Persona preserved. Conservative human disengagement."
-                )
+            return AgentDecision(
+                scamDetected=False,
+                conversationStatus="ONGOING",
+                replyText="I’m not comfortable with this. I’ll check directly with the bank later.",
+                extractedIntelligence=ExtractedIntelligence(),
+                agentNotes="LLM unavailable. Conservative human response used."
+            )

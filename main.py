@@ -1,42 +1,24 @@
 import os
-import uvicorn
 import logging
+import uvicorn
+import requests
 from fastapi import FastAPI, HTTPException, Header, Depends, BackgroundTasks
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
 from agent_engine import AgentEngine
 
-# -------------------------------------------------
-# SETUP
-# -------------------------------------------------
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("API")
-
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
-API_SECRET = os.getenv("API_SECRET", "guvi_hackathon_secret_123")
-PORT = int(os.getenv("PORT", 8000))
-
-# ✅ OFFICIAL GUVI CALLBACK (MANDATORY)
+API_SECRET = os.getenv("API_SECRET")
 CALLBACK_URL = "https://hackathon.guvi.in/api/updateHoneyPotFinalResult"
 
-app = FastAPI(title="Agentic Honey-Pot API", version="1.0.0")
+app = FastAPI()
 
-# -------------------------------------------------
-# INIT AGENT
-# -------------------------------------------------
-try:
-    agent_engine = AgentEngine()
-    logger.info("✅ Agent Engine Initialized Successfully")
-except Exception as e:
-    logger.error(f"❌ Failed to initialize Agent Engine: {e}")
-    agent_engine = None
+agent_engine = AgentEngine()
 
-# -------------------------------------------------
-# MODELS
-# -------------------------------------------------
 class MessageData(BaseModel):
     sender: str
     text: str
@@ -55,81 +37,55 @@ class APIResponse(BaseModel):
     extractedIntelligence: Dict[str, Any]
     agentNotes: str
 
-# -------------------------------------------------
-# AUTH
-# -------------------------------------------------
-async def verify_api_key(x_api_key: str = Header(...)):
+def verify_api_key(x_api_key: str = Header(...)):
     if x_api_key != API_SECRET:
         raise HTTPException(status_code=401, detail="Invalid API Key")
-    return x_api_key
 
-# -------------------------------------------------
-# CALLBACK (MANDATORY)
-# -------------------------------------------------
-async def send_callback_background(
-    session_id: str,
-    decision_data: dict,
-    total_messages: int
-):
-    try:
-        payload = {
-            "sessionId": session_id,
-            "scamDetected": decision_data.get("scamDetected"),
-            "totalMessagesExchanged": total_messages,
-            "extractedIntelligence": decision_data.get("extractedIntelligence"),
-            "agentNotes": decision_data.get("agentNotes")
-        }
+async def send_callback(session_id, decision, total_msgs):
+    payload = {
+        "sessionId": session_id,
+        "scamDetected": decision["scamDetected"],
+        "totalMessagesExchanged": total_msgs,
+        "extractedIntelligence": {
+            "bankAccounts": decision["extractedIntelligence"].get("bankAccounts", []),
+            "upiIds": decision["extractedIntelligence"].get("upiIds", []),
+            "phishingLinks": decision["extractedIntelligence"].get("phishingLinks", []),
+            "phoneNumbers": decision["extractedIntelligence"].get("phoneNumbers", []),
+            "suspiciousKeywords": decision["extractedIntelligence"].get("suspiciousKeywords", [])
+        },
+        "agentNotes": decision["agentNotes"]
+    }
 
-        logger.info(f"🚀 [CALLBACK] Sending Final Report for Session: {session_id}")
-        logger.info(f"📦 Payload: {payload}")
+    for _ in range(3):  # ✅ retries
+        try:
+            r = requests.post(CALLBACK_URL, json=payload, timeout=5)
+            if r.status_code in (200, 201):
+                return
+        except:
+            pass
 
-        import requests
-        requests.post(
-            CALLBACK_URL,
-            json=payload,
-            timeout=5
-        )
-
-    except Exception as e:
-        logger.error(f"⚠️ CALLBACK FAILED (will not block score): {e}")
-
-# -------------------------------------------------
-# MAIN ENDPOINT
-# -------------------------------------------------
 @app.post("/api/v1/detect", response_model=APIResponse)
-async def detect_scam(
+async def detect(
     payload: IncomingRequest,
-    background_tasks: BackgroundTasks,
-    api_key: str = Depends(verify_api_key)
+    bg: BackgroundTasks,
+    _: str = Depends(verify_api_key)
 ):
-    if not agent_engine:
-        raise HTTPException(status_code=500, detail="AI Engine not initialized")
+    history = [m.model_dump() for m in payload.conversationHistory]
+    total_msgs = len(history) + 1
 
-    # --- PREPARE HISTORY ---
-    history_list = [msg.model_dump() for msg in payload.conversationHistory]
-    total_msgs = len(payload.conversationHistory) + 1
-
-    # --- AGENT CALL ---
     decision = agent_engine.process_message(
-        incoming_msg=payload.message.text,
-        history=history_list,
-        sender_type=payload.message.sender.lower()
+        payload.message.text,
+        history,
+        payload.message.sender
     )
 
-    # --- CALLBACK ONLY WHEN AGENT FINISHES ---
     if decision.conversationStatus == "FINISHED":
-        background_tasks.add_task(
-            send_callback_background,
-            session_id=payload.sessionId,
-            decision_data=decision.model_dump(),
-            total_messages=total_msgs
+        bg.add_task(
+            send_callback,
+            payload.sessionId,
+            decision.model_dump(),
+            total_msgs
         )
-
-    # --- RESPONSE ---
-    formatted_notes = (
-        f"[STATUS: {decision.conversationStatus}] "
-        f"[REPLY]: {decision.replyText} | {decision.agentNotes}"
-    )
 
     return {
         "status": "success",
@@ -139,11 +95,8 @@ async def detect_scam(
             "totalMessagesExchanged": total_msgs
         },
         "extractedIntelligence": decision.extractedIntelligence.model_dump(),
-        "agentNotes": formatted_notes
+        "agentNotes": decision.agentNotes
     }
 
-# -------------------------------------------------
-# RUN
-# -------------------------------------------------
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
