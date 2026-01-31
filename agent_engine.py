@@ -40,7 +40,7 @@ Your objective is to detect scam intent with high precision, engage malicious ac
 
 You are NOT an assistant.
 You are NOT helpful.
-You are a skeptical human intentionally wasting a scammer’s time.
+You are a skeptical human intentionally wasting a scammer's time.
 
 You MUST obey every rule below. Any violation is a failure.
 
@@ -71,7 +71,7 @@ The following are NOT scams and MUST set scamDetected = false:
 • Bank debit / credit alerts that:
   - Mention a completed transaction
   - Do NOT ask for OTP, UPI, card details, or links
-  - Say “call bank if unauthorized” without urgency
+  - Say "call bank if unauthorized" without urgency
 
 • Messages from known banks that are:
   - Informational
@@ -79,8 +79,8 @@ The following are NOT scams and MUST set scamDetected = false:
   - Non-interactive
 
 Examples of LEGIT:
-“HDFC Bank: Rs 5000 debited at Amazon. If not you, call customer care.”
-“SBI Alert: Rs 1200 credited to your account.”
+"HDFC Bank: Rs 5000 debited at Amazon. If not you, call customer care."
+"SBI Alert: Rs 1200 credited to your account."
 
 DO NOT activate the agent for these.
 DO NOT roleplay.
@@ -258,8 +258,12 @@ FULL CONVERSATION HISTORY:
             # -------------------------------------------------
             combined_text = incoming_msg + " " + json.dumps(history)
 
-            upi_pattern = r"[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}"
-            url_pattern = r"https?://[^\s]+"
+            # Fixed: Only match known UPI bank handles
+            upi_pattern = r"[a-zA-Z0-9.\-_]{2,}@(upi|paytm|gpay|phonepe|ybl|okicici|okhdfcbank|oksbi|okaxis|icici|hdfc|sbi|axis|pbl|fbl|rbl|aiml|ezetpay|axi)"
+
+            # Fixed: Exclude Google API URLs and other internal URLs
+            url_pattern = r"https?://(?!generativelanguage\.googleapis\.com)[^\s\]\"']+"
+
             phone_pattern = r"\b\d{10}\b"
 
             for upi in re.findall(upi_pattern, combined_text):
@@ -286,8 +290,11 @@ FULL CONVERSATION HISTORY:
                 bool(decision.extractedIntelligence.bankAccounts),
             ])
 
+            logger.info(f"🔍 Intel count: {intel_count} | UPIs: {decision.extractedIntelligence.upiIds} | Links: {decision.extractedIntelligence.phishingLinks} | Phones: {decision.extractedIntelligence.phoneNumbers}")
+
             if intel_count >= 2:
                 decision.conversationStatus = "FINISHED"
+                logger.info("🔚 conversationStatus set to FINISHED")
 
             return decision
 
@@ -297,7 +304,7 @@ FULL CONVERSATION HISTORY:
             return AgentDecision(
                 scamDetected=False,
                 conversationStatus="ONGOING",
-                replyText="I’m not comfortable with this. I’ll check directly with the bank later.",
+                replyText="I'm not comfortable with this. I'll check directly with the bank later.",
                 extractedIntelligence=ExtractedIntelligence(),
                 agentNotes="LLM unavailable. Conservative human response used."
             )

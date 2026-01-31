@@ -11,6 +11,7 @@ from agent_engine import AgentEngine
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 API_SECRET = os.getenv("API_SECRET")
 CALLBACK_URL = "https://hackathon.guvi.in/api/updateHoneyPotFinalResult"
@@ -42,6 +43,8 @@ def verify_api_key(x_api_key: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
 async def send_callback(session_id, decision, total_msgs):
+    logger.info(f"🚀 INITIATING CALLBACK for session: {session_id}")
+
     payload = {
         "sessionId": session_id,
         "scamDetected": decision["scamDetected"],
@@ -56,13 +59,27 @@ async def send_callback(session_id, decision, total_msgs):
         "agentNotes": decision["agentNotes"]
     }
 
-    for _ in range(3):  # ✅ retries
+    logger.info(f"📦 Callback payload: {payload}")
+
+    for attempt in range(3):
         try:
-            r = requests.post(CALLBACK_URL, json=payload, timeout=5)
+            r = requests.post(
+                CALLBACK_URL,
+                json=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "x-api-key": API_SECRET
+                },
+                timeout=5
+            )
+            logger.info(f"📡 Callback attempt {attempt + 1} → Status: {r.status_code} | Response: {r.text}")
             if r.status_code in (200, 201):
+                logger.info(f"✅ CALLBACK SUCCESS for session: {session_id}")
                 return
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"❌ Callback attempt {attempt + 1} failed: {e}")
+
+    logger.error(f"⚠️ CALLBACK FAILED after 3 retries for session: {session_id}")
 
 @app.post("/api/v1/detect", response_model=APIResponse)
 async def detect(
@@ -79,11 +96,16 @@ async def detect(
         payload.message.sender
     )
 
+    decision_dict = decision.model_dump()
+
+    logger.info(f"📊 conversationStatus: {decision.conversationStatus} | scamDetected: {decision.scamDetected}")
+
     if decision.conversationStatus == "FINISHED":
+        logger.info(f"🔚 FINISHED detected — triggering callback for session: {payload.sessionId}")
         bg.add_task(
             send_callback,
             payload.sessionId,
-            decision.model_dump(),
+            decision_dict,
             total_msgs
         )
 
