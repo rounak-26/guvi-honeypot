@@ -25,7 +25,7 @@ def send_final_callback(session_id: str, decision_data: dict, total_messages: in
 
     try:
         # We set a timeout because we don't want to hang forever
-        response = requests.post(CALLBACK_URL, json=payload, timeout=10)
+        response = requests.post(CALLBACK_URL, json=payload, headers={"Content-Type": "application/json", "x-api-key": "guvi_hackathon_secret_123"}, timeout=10)
         
         if response.status_code == 200 or response.status_code == 201:
             logger.info(f"✅ CALLBACK SUCCESS: {response.status_code} | {response.text}")
