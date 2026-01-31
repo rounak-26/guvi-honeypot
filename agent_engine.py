@@ -3,6 +3,7 @@ import json
 import logging
 import random
 import time
+import re
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
@@ -187,7 +188,7 @@ FINAL PRINCIPLES
 
 
 # -------------------------------------------------
-# INTERNAL HELPER (REQUIRED FIX)
+# INTERNAL HELPER
 # -------------------------------------------------
 def _clean_json(text: str) -> str:
     text = text.strip()
@@ -246,13 +247,32 @@ FULL CONVERSATION HISTORY:
                 )
             )
 
-            logger.info(f"🧾 RAW GEMINI RESPONSE:\n{response.text}")
-
             if response.parsed:
                 decision = response.parsed
             else:
                 cleaned = _clean_json(response.text)
                 decision = AgentDecision.model_validate_json(cleaned)
+
+            # -------------------------------------------------
+            # 🔒 GUARANTEED DETERMINISTIC EXTRACTION (REQUIRED)
+            # -------------------------------------------------
+            combined_text = incoming_msg + " " + json.dumps(history)
+
+            upi_pattern = r"[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}"
+            url_pattern = r"https?://[^\s]+"
+            phone_pattern = r"\b\d{10}\b"
+
+            for upi in re.findall(upi_pattern, combined_text):
+                if upi not in decision.extractedIntelligence.upiIds:
+                    decision.extractedIntelligence.upiIds.append(upi)
+
+            for link in re.findall(url_pattern, combined_text):
+                if link not in decision.extractedIntelligence.phishingLinks:
+                    decision.extractedIntelligence.phishingLinks.append(link)
+
+            for phone in re.findall(phone_pattern, combined_text):
+                if phone not in decision.extractedIntelligence.phoneNumbers:
+                    decision.extractedIntelligence.phoneNumbers.append(phone)
 
             if decision.scamDetected and not decision.replyText.strip():
                 decision.replyText = (
