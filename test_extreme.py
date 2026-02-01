@@ -49,7 +49,7 @@ import requests
 # CONFIG — change BASE_URL if your server runs elsewhere
 # ---------------------------------------------------------------------------
 BASE_URL: str = "http://127.0.0.1:8000"
-API_KEY: str = "test-api-key"  # match whatever x-api-key your main.py expects
+API_KEY: str = "guvi_hackathon_secret_123"  # must match API_SECRET in .env
 HEADERS: dict = {
     "Content-Type": "application/json",
     "x-api-key": API_KEY,
@@ -76,7 +76,7 @@ def now_iso() -> str:
 def make_request(payload: dict) -> requests.Response:
     """POST to /api/honeypot (adjust path if yours differs)."""
     # Try common endpoint paths; use whichever your main.py exposes
-    for path in ["/api/honeypot", "/honeypot", "/api/detect", "/"]:
+    for path in ["/api/v1/detect", "/api/honeypot", "/honeypot", "/api/detect", "/"]:
         url = f"{BASE_URL}{path}"
         try:
             resp = requests.post(url, json=payload, headers=HEADERS, timeout=TIMEOUT)

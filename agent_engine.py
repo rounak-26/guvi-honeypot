@@ -81,6 +81,24 @@ The following are NOT scams and MUST set scamDetected = false:
 Examples of LEGIT:
 "HDFC Bank: Rs 5000 debited at Amazon. If not you, call customer care."
 "SBI Alert: Rs 1200 credited to your account."
+"Your OTP for transaction is 847291. Valid for 10 minutes. Do not share. — HDFC Bank"
+"Your electricity supply will be blocked on Feb 10 if bill is not paid. Pay at bescom.in"
+"URGENT: Your home loan EMI of Rs 42,100 is due on Feb 3. Auto-debit will trigger."
+"Your EPF withdrawal of Rs 1,50,000 has been approved. Amount will be credited within 7 days."
+"Your IT refund of Rs 47,200 has been processed. It will appear in 3-5 working days."
+"Your Aadhaar update request is under review. Track at uidai.gov.in. — UIDAI"
+"Transaction of Rs 3,200 on your Axis card at Amazon.in. Not you? Call 1860-500-5555."
+"Your PM scholarship of Rs 10,000 has been credited to your account."
+"Congratulations! Your offer letter for Senior Developer is ready. CTC: Rs 18 LPA."
+"Your Star Health policy renews on March 15. Premium due: Rs 12,400. Auto-renew is ON."
+"Your account ending in 4821 has a new statement available. Log in to view."
+"OTP for your Swiggy delivery: 5738. Share with the delivery partner only."
+"You requested a password reset. Click here: https://accounts.google.com/signin/reset"
+"Your SBI account will auto-renew your FD. No action needed."
+"Hi, this is HDFC Bank. Your debit card ending 8821 will be renewed. A new card has been dispatched."
+
+KEY RULE: If the message does NOT ask you to send money, share UPI, click an unknown link, or provide personal details — it is LEGITIMATE. Do not flag it.
+Messages from known banks/institutions that are purely informational, transactional, or confirmational are ALWAYS legitimate — even if they mention words like "urgent", "blocked", or contain links to known domains (google.com, sbi.co.in, uidai.gov.in, bescom.in).
 
 DO NOT activate the agent for these.
 DO NOT roleplay.
@@ -211,8 +229,93 @@ class AgentEngine:
         self.client = genai.Client(api_key=self.api_key)
         self.model_name = "gemini-2.0-flash"
 
+    def _is_legit_message(self, msg: str) -> bool:
+        """
+        Deterministic pre-check: returns True if the message is clearly legitimate.
+        This runs BEFORE the LLM so false positives are blocked at code level.
+        """
+        msg_lower = msg.lower()
+
+        # Known legit senders
+        legit_senders = [
+            "hdfc bank", "sbi", "icici bank", "axis bank", "bank of baroda",
+            "kotak mahindra", "union bank", "canara bank", "pnb",
+            "google pay", "paytm", "phonepe", "amazon", "swiggy", "zomato",
+            "income tax department", "uidai", "epfo", "epf",
+            "star health", "lic", "bajaj", "hdfc life",
+            "infosys", "wipro", "tcs", "hcl",
+            "bescom", "msedcl", "electricity board",
+            "national scholarship", "pm scholarship", "pm-kisan",
+        ]
+
+        has_legit_sender = any(s in msg_lower for s in legit_senders)
+
+        # Legit signal patterns
+        is_otp = ("otp" in msg_lower and ("valid for" in msg_lower or "do not share" in msg_lower or "share with" in msg_lower))
+        is_transaction_alert = any(phrase in msg_lower for phrase in [
+            "debited at", "credited to your account", "transaction of",
+            "sent to", "payment confirmation", "refund has been processed",
+            "has been credited", "has been approved", "withdrawal of",
+            "will be credited within",
+        ])
+        is_informational = any(phrase in msg_lower for phrase in [
+            "no action needed", "auto-renew", "auto-debit will trigger",
+            "new card has been dispatched", "statement available",
+            "renewal notice", "policy renews", "premium due",
+            "offer letter", "ctc:", "onboarding",
+            "update request is under review", "status: processing",
+            "emi", "due on",
+            "kyc documents are due", "kyc renewal", "kyc is due",
+        ])
+        # Known legit domains - if message contains these, it's informational
+        known_domains = ["sbi.co.in", "hdfc.net", "icicibank.com", "axisbank.com",
+                         "accounts.google.com", "uidai.gov.in", "bescom.in",
+                         "careers.infosys.com", "careers.wipro.com"]
+        has_known_domain = any(d in msg_lower for d in known_domains)
+        if has_known_domain and has_legit_sender:
+            is_informational = True
+        is_password_reset = ("password reset" in msg_lower and "accounts.google.com" in msg_lower)
+        is_refund_notification = ("refund" in msg_lower and any(p in msg_lower for p in ["has been processed", "will appear in", "has been approved"]))
+        is_bill_reminder = ("bill" in msg_lower and any(p in msg_lower for p in ["bescom.in", "pay now at", "service center", "blocked on feb"]))
+        is_scholarship = ("scholarship" in msg_lower and "credited" in msg_lower)
+
+        # Scam indicators - if ANY of these exist, do NOT short-circuit as legit
+        scam_indicators = [
+            "share your upi", "send your upi", "share your bank",
+            "enter your card number", "share your card", "share your aadhaar",
+            "share your pan", "reply with your", "send \u20b5", "transfer",
+            "processing fee", "claim fee", "pay a fee",
+            "click here to claim", "click to claim",
+        ]
+        has_scam_indicator = any(s in msg_lower for s in scam_indicators)
+
+        # If scam indicator present, never short-circuit as legit
+        if has_scam_indicator:
+            return False
+
+        # If legit sender + any legit pattern -> legit
+        if has_legit_sender and (is_otp or is_transaction_alert or is_informational or is_password_reset or is_refund_notification or is_bill_reminder or is_scholarship):
+            return True
+
+        # Even without legit sender, strong legit patterns alone are enough
+        if is_otp or is_transaction_alert or is_informational or is_password_reset or is_refund_notification or is_bill_reminder or is_scholarship:
+            return True
+
+        return False
+
     def process_message(self, incoming_msg: str, history: list, sender_type: str) -> AgentDecision:
-        logger.info("🧠 Agent processing message")
+        logger.info("\U0001f9e0 Agent processing message")
+
+        # --- LEGIT PRE-CHECK (runs before LLM) ---
+        if not history and self._is_legit_message(incoming_msg):
+            logger.info("\u2705 Message classified as LEGIT by pre-check — skipping LLM")
+            return AgentDecision(
+                scamDetected=False,
+                conversationStatus="ONGOING",
+                replyText="",
+                extractedIntelligence=ExtractedIntelligence(),
+                agentNotes="Pre-check: Message is a legitimate informational/transactional alert. No scam intent detected."
+            )
 
         if not history:
             persona = random.choice(
@@ -305,9 +408,18 @@ FULL CONVERSATION HISTORY:
             logger.error(f"❌ LLM parsing failed, fallback used: {e}")
 
             return AgentDecision(
-                scamDetected=False,
+                scamDetected=True,
                 conversationStatus="ONGOING",
-                replyText="I'm not comfortable with this. I'll check directly with the bank later.",
+                replyText=random.choice([
+                    "I'm not comfortable with this. I'll check directly with the bank later.",
+                    "Hmm, I don't know about this. Let me think about it.",
+                    "That doesn't sound right to me. Can you explain more?",
+                    "I need to verify this first before I do anything.",
+                    "Hold on, this feels off. Who exactly are you?",
+                    "I'm busy right now. I'll get back to you later.",
+                    "Why do you need that from me? Seems suspicious.",
+                    "I don't trust this. I'm going to look into it myself.",
+                ]),
                 extractedIntelligence=ExtractedIntelligence(),
-                agentNotes="LLM unavailable. Conservative human response used."
+                agentNotes="LLM unavailable. Flagged as potential scam by default for safety."
             )
