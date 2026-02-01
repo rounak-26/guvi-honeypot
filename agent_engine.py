@@ -258,8 +258,8 @@ FULL CONVERSATION HISTORY:
             # -------------------------------------------------
             combined_text = incoming_msg + " " + json.dumps(history)
 
-            # Fixed: Only match known UPI bank handles
-            upi_pattern = r"[a-zA-Z0-9.\-_]{2,}@(upi|paytm|gpay|phonepe|ybl|okicici|okhdfcbank|oksbi|okaxis|icici|hdfc|sbi|axis|pbl|fbl|rbl|aiml|ezetpay|axi)"
+            # Fixed: Non-capturing group + word boundary so "upi" alone doesn't match
+            upi_pattern = r"[a-zA-Z0-9.\-_]{2,}@(?:upi|paytm|gpay|phonepe|ybl|okicici|okhdfcbank|oksbi|okaxis|icici|hdfc|sbi|axis|pbl|fbl|rbl|aiml|ezetpay|axi)\b"
 
             # Fixed: Exclude Google API URLs and other internal URLs
             url_pattern = r"https?://(?!generativelanguage\.googleapis\.com)[^\s\]\"']+"
