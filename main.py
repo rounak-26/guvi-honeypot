@@ -98,6 +98,7 @@ async def detect(
 
     decision_dict = decision.model_dump()
 
+    logger.info(f"💬 Agent replyText: {decision.replyText}")
     logger.info(f"📊 conversationStatus: {decision.conversationStatus} | scamDetected: {decision.scamDetected}")
 
     if decision.conversationStatus == "FINISHED":
