@@ -295,6 +295,9 @@ FULL CONVERSATION HISTORY:
             if intel_count >= 2:
                 decision.conversationStatus = "FINISHED"
                 logger.info("🔚 conversationStatus set to FINISHED")
+            else:
+                decision.conversationStatus = "ONGOING"
+                logger.info(f"🔄 conversationStatus forced to ONGOING | intel_count: {intel_count}")
 
             return decision
 
