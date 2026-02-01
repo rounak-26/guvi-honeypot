@@ -1,6 +1,5 @@
 # 🛡️ Agentic Honeypot — Scam Detection & Intelligence Extraction
 
-> **GUVI x HCL Hackathon 2026**
 > An autonomous AI-powered honeypot that detects scam messages, engages scammers in multi-turn conversations, extracts actionable intelligence, and reports findings — all without revealing detection.
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3572A5?style=flat-square&logo=python)](https://www.python.org/)
