@@ -1,404 +1,216 @@
-\# 🛡️ Agentic Honeypot for Scam Detection \& Intelligence Extraction
+# 🛡️ Agentic Honeypot — Scam Detection & Intelligence Extraction
 
+> **GUVI x HCL Hackathon 2026**
+> An autonomous AI-powered honeypot that detects scam messages, engages scammers in multi-turn conversations, extracts actionable intelligence, and reports findings — all without revealing detection.
 
+[![Python](https://img.shields.io/badge/Python-3.10+-3572A5?style=flat-square&logo=python)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Gemini](https://img.shields.io/badge/Gemini-2.0%20Flash-4285F4?style=flat-square&logo=google)](https://ai.google.dev/)
+[![Render](https://img.shields.io/badge/Deployed-Render-46E3B7?style=flat-square)](https://render.com/)
 
-This project implements a \*\*production-grade Agentic Honeypot API\*\* designed to \*\*detect scams, engage malicious actors autonomously, extract actionable intelligence, and disengage safely\*\* — without revealing detection.
-
-
-
-The system is built to align \*\*strictly with the GUVI Hackathon problem statement\*\*, including:
-
-\- Progressive scam detection  
-
-\- Human-like engagement  
-
-\- Memory-aware conversation handling  
-
-\- Structured intelligence extraction  
-
-\- Mandatory callback support  
-
-
+🌐 **Live API:** [https://guvi-honeypot-p45x.onrender.com](https://guvi-honeypot-p45x.onrender.com)
+📄 **Docs:** [https://guvi-honeypot-p45x.onrender.com/docs](https://guvi-honeypot-p45x.onrender.com/docs)
 
 ---
 
+## 🎯 How It Works
 
+The system operates as a **multi-phase autonomous agent**:
 
-\## 🚀 What This System Does
-
-
-
-\- Detects scam intent progressively (not binary)
-
-\- Engages scammers like a real human (skeptical, confused, busy personas)
-
-\- Extracts intelligence such as:
-
-&nbsp; - UPI IDs
-
-&nbsp; - Bank account numbers
-
-&nbsp; - Phishing links
-
-&nbsp; - Phone numbers
-
-&nbsp; - Scam keywords
-
-\- Maintains conversation memory across messages
-
-\- Disengages cleanly after sufficient intelligence is gathered
-
-\- Never alerts the scammer that detection has occurred
-
-
+| Phase | What Happens |
+|---|---|
+| **Detection** | Incoming message is scanned with keyword matching + LLM confirmation |
+| **Persona Lock** | A human persona is selected and locked for the entire session |
+| **Engagement** | Agent replies skeptically — delays, questions, resists — like a real person |
+| **Extraction** | UPIs, bank accounts, phishing links, and phone numbers are extracted progressively |
+| **Disengage** | Once 2+ independent intelligence signals are confirmed, the agent exits naturally |
+| **Callback** | Final intelligence is POSTed to GUVI's evaluation endpoint |
 
 ---
 
-
-
-\## 🧠 Core Design Philosophy
-
-
-
-\- Accuracy > Cleverness  
-
-\- Consistency > Creativity  
-
-\- False positives are heavily penalized  
-
-\- Legitimate bank alerts must NEVER be flagged  
-
-\- Scam detection is progressive and evidence-based  
-
-
-
-This is \*\*not a chatbot\*\* and \*\*not a simple classifier\*\*.  
-
-It is an \*\*autonomous agent\*\* designed to waste scammer time while gathering evidence.
-
-
-
----
-
-
-
-\## 🏗️ Architecture Overview
-
-
+## 🏗️ Architecture
 
 ```
-
-Client (SMS / API)
-
-&nbsp;       |
-
-&nbsp;       v
-
-FastAPI (/api/v1/detect)
-
-&nbsp;       |
-
-&nbsp;       v
-
-AgentEngine (Gemini 2.0 Flash)
-
-&nbsp;       |
-
-&nbsp;       v
-
-Structured Decision (JSON)
-
-&nbsp;       |
-
-&nbsp;       +--> Client Response
-
-&nbsp;       |
-
-&nbsp;       +--> GUVI Callback (on FINISHED)
-
+Client (SMS / WhatsApp / API)
+        │
+        ▼
+POST /api/v1/detect
+        │
+        ▼
+┌─────────────────────┐
+│   FastAPI (main.py) │  ← API key validation, request handling
+└────────┬────────────┘
+         ▼
+┌─────────────────────┐
+│  AgentEngine        │  ← Gemini 2.0 Flash + Regex extraction
+│  (agent_engine.py)  │  ← Persona, memory, stop logic
+└────────┬────────────┘
+         ▼
+    ┌─────────┐     ┌──────────────────┐
+    │ Client  │     │  GUVI Callback   │
+    │Response │     │ (on FINISHED)    │
+    └─────────┘     └──────────────────┘
 ```
 
+---
 
+## 📂 Project Structure
+
+```
+├── main.py                      # FastAPI app, routing, callback trigger
+├── agent_engine.py              # Core agent: detection, persona, extraction, stop logic
+├── callback_service.py          # POST final results to GUVI endpoint
+├── Procfile                     # Render deployment config
+├── requirements.txt             # Dependencies
+├── .env                         # API keys (not committed)
+├── test_llm.py                  # Gemini API connectivity test
+├── test_extreme.py              # Full adversarial test suite
+├── test_simulation.py           # Multi-turn simulation
+├── test_personas.py             # Persona consistency tests
+└── test_consistency.py          # Memory & context tests
+```
 
 ---
 
+## 🚀 API Reference
 
+### `POST /api/v1/detect`
 
-\## 🧩 Key Components
+**Headers:**
+```
+x-api-key: YOUR_SECRET_API_KEY
+Content-Type: application/json
+```
 
-
-
-\### `main.py`
-
-\- FastAPI application
-
-\- API key validation
-
-\- Request / response formatting
-
-\- Background callback execution
-
-
-
-\### `agent\_engine.py`
-
-\- Core agent logic
-
-\- Persona selection \& locking
-
-\- Progressive scam detection
-
-\- Intelligence extraction
-
-\- Stop / disengage logic
-
-\- LLM-failure safe fallback
-
-
-
-\### `callback\_service.py`
-
-\- Sends final results to GUVI’s evaluation endpoint
-
-\- Runs asynchronously to avoid blocking API responses
-
-
-
-\### `Procfile`
-
-\- Production startup command for Render deployment
-
-
-
----
-
-
-
-\## 📡 API Endpoint
-
-
-
-\### `POST /api/v1/detect`
-
-
-
-\#### Request Body (Example)
-
-
-
+**Request:**
 ```json
-
 {
-
-&nbsp; "sessionId": "example-session-001",
-
-&nbsp; "message": {
-
-&nbsp;   "sender": "scammer",
-
-&nbsp;   "text": "Your account is blocked. Pay ₹1 to verify.pay@okaxis immediately.",
-
-&nbsp;   "timestamp": "2026-02-01T18:30:00Z"
-
-&nbsp; },
-
-&nbsp; "conversationHistory": \[],
-
-&nbsp; "metadata": {
-
-&nbsp;   "channel": "SMS",
-
-&nbsp;   "language": "English",
-
-&nbsp;   "locale": "IN"
-
-&nbsp; }
-
+  "sessionId": "session-001",
+  "message": {
+    "sender": "scammer",
+    "text": "Your account is blocked. Share your UPI ID immediately.",
+    "timestamp": "2026-02-01T10:15:30Z"
+  },
+  "conversationHistory": [],
+  "metadata": {
+    "channel": "SMS",
+    "language": "English",
+    "locale": "IN"
+  }
 }
-
 ```
 
-
-
----
-
-
-
-\#### Response Body (Example)
-
-
-
+**Response:**
 ```json
-
 {
-
-&nbsp; "status": "success",
-
-&nbsp; "scamDetected": true,
-
-&nbsp; "engagementMetrics": {
-
-&nbsp;   "engagementDurationSeconds": 15,
-
-&nbsp;   "totalMessagesExchanged": 1
-
-&nbsp; },
-
-&nbsp; "extractedIntelligence": {
-
-&nbsp;   "upiIds": \["verify.pay@okaxis"],
-
-&nbsp;   "bankAccounts": \[],
-
-&nbsp;   "phishingLinks": \[],
-
-&nbsp;   "phoneNumbers": \[],
-
-&nbsp;   "suspiciousKeywords": \["blocked", "verify"]
-
-&nbsp; },
-
-&nbsp; "agentNotes": "Persona: Confused Senior. Scam tactic: Urgency and UPI payment request. Delaying to extract intelligence."
-
+  "status": "success",
+  "scamDetected": true,
+  "engagementMetrics": {
+    "engagementDurationSeconds": 105,
+    "totalMessagesExchanged": 7
+  },
+  "extractedIntelligence": {
+    "bankAccounts": [],
+    "upiIds": ["scammer123@upi"],
+    "phishingLinks": ["https://fake-bank-verify.com/confirm"],
+    "phoneNumbers": [],
+    "suspiciousKeywords": ["blocked", "verify", "verification fee"]
+  },
+  "agentNotes": "Persona: Skeptical Student. Scammer used urgency + payment redirection. Extracted UPI and phishing link. Disengaged after 2 signals confirmed."
 }
-
 ```
-
-
 
 ---
 
+## 🧠 Key Technical Decisions
 
+**Why Gemini 2.0 Flash?**
+Fastest inference in the Gemini family. Critical for sub-second API responses during multi-turn engagement.
 
-\## ✅ Legit Message Handling (False-Positive Safe)
+**Why deterministic regex extraction over LLM-only?**
+LLMs hallucinate. UPIs, links, and phone numbers are extracted via regex on the raw text — guaranteed accuracy. The LLM handles intent and persona; regex handles precision extraction.
 
+**Why force `conversationStatus` in code, not in the LLM?**
+The LLM tends to set FINISHED too early. The stop logic is enforced deterministically: FINISHED only fires when 2+ independent intelligence signals are confirmed by regex. This is the single most important reliability decision in the system.
 
-
-The agent explicitly whitelists legitimate messages such as:
-
-\- Bank debit / credit alerts
-
-\- Informational OTP messages
-
-\- Non-interactive transactional alerts
-
-
-
-Example that must NOT be flagged:
-
-
-
-```
-
-HDFC Bank Alert: Rs 4,850 debited at Amazon. If not you, contact customer care.
-
-```
-
-
+**Why background tasks for callbacks?**
+The API must respond fast. The callback to GUVI runs asynchronously via FastAPI's `BackgroundTasks` — the client gets a 200 response in ~500ms while the callback fires independently with 3 retries.
 
 ---
 
+## ⚙️ Setup & Run Locally
 
+```bash
+# 1. Clone
+git clone <your-repo-url>
+cd Final-Agentic-Honey-Pot-API
 
-\## 🔐 Environment Variables
+# 2. Install dependencies
+pip install -r requirements.txt
 
+# 3. Create .env file
+# GOOGLE_API_KEY=your_gemini_key
+# API_SECRET=guvi_hackathon_secret_123
+# PORT=8000
 
+# 4. Run
+uvicorn main:app --reload
 
-These are \*\*NOT committed to GitHub\*\*.
-
-
-
+# 5. Test LLM connectivity
+python test_llm.py
 ```
-
-GOOGLE\_API\_KEY=your\_gemini\_api\_key
-
-API\_SECRET=guvi\_hackathon\_secret\_123
-
-PORT=8000
-
-```
-
-
-
-Environment variables are configured directly in \*\*Render Dashboard\*\*.
-
-
 
 ---
 
+## 🧪 Testing
 
+```bash
+# Full adversarial test suite (66+ tests across 8 categories)
+python test_extreme.py
 
-\## ☁️ Deployment
-
-
-
-\- Platform: Render
-
-\- Server: Uvicorn
-
-\- Model: Gemini 2.0 Flash
-
-
-
-\*\*Procfile\*\*
-
+# Categories covered:
+# CAT-A → Legitimate messages disguised as scams (false positive traps)
+# CAT-B → Scams disguised as legitimate (false negative traps)
+# CAT-C → Multi-turn adversarial conversation chains
+# CAT-D → Exact GUVI schema validation
+# CAT-E → Edge cases (unicode, empty, injections, huge payloads)
+# CAT-F → Callback payload structure verification
+# CAT-G → Persona consistency under prompt injection attacks
+# CAT-H → Ambiguous gray-zone messages
 ```
 
+---
+
+## ☁️ Deployment
+
+Deployed on **Render** (Free Tier) with auto-deploy from GitHub.
+
+```
+# Procfile
 web: uvicorn main:app --host 0.0.0.0 --port $PORT
-
 ```
 
-
-
----
-
-
-
-\## 🧪 Testing
-
-
-
-The repository includes test scripts covering:
-
-\- Scam vs legit detection
-
-\- Persona consistency
-
-\- Memory handling
-
-\- Multi-turn extraction
-
-\- LLM availability fallback
-
-
+Environment variables are configured in Render Dashboard — never committed to git.
 
 ---
 
+## ✅ GUVI Compliance Checklist
 
-
-\## 🏁 Final Notes
-
-
-
-\- Designed to match real-world scam behavior
-
-\- Outputs are strictly structured for judge evaluation
-
-\- Conservative behavior when uncertain
-
-\- All GUVI hackathon requirements are explicitly addressed
-
-
+| Requirement | Status |
+|---|---|
+| Scam detection | ✅ Progressive, evidence-based |
+| AI Agent activation | ✅ On confirmed scam intent |
+| Human-like persona | ✅ Skeptical, memory-locked |
+| Multi-turn handling | ✅ Full conversationHistory support |
+| Intelligence extraction | ✅ UPI, links, phones, keywords |
+| Structured JSON response | ✅ Exact schema match |
+| x-api-key authentication | ✅ Header validation |
+| Final callback to GUVI | ✅ POST with retries, confirmed 200 |
+| Legitimate message safety | ✅ Whitelisted — zero false positives |
 
 ---
 
+## 👤 Author
 
-
-\### 👤 Author
-
-\*\*Rounak Deb\*\*  
-
-Agentic Honeypot – GUVI Hackathon Submission
-
-
-
+**Rounak Deb**
+GUVI x HCL Hackathon 2026 — Agentic Honeypot Submission
