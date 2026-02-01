@@ -21,13 +21,14 @@ app = FastAPI()
 agent_engine = AgentEngine()
 
 class MessageData(BaseModel):
-    sender: str
+    sender: Optional[str] = "unknown"
     text: str
-    timestamp: str
+    timestamp: Optional[str] = ""
 
 class IncomingRequest(BaseModel):
-    sessionId: str
-    message: MessageData
+    sessionId: Optional[str] = "default-session"
+    message: Optional[MessageData] = None
+    text: Optional[str] = None
     conversationHistory: List[MessageData] = []
     metadata: Optional[dict] = None
 
@@ -87,6 +88,13 @@ async def detect(
     bg: BackgroundTasks,
     _: str = Depends(verify_api_key)
 ):
+    # Normalize: GUVI might send { "text": "..." } flat OR { "message": { "text": "..." } }
+    if payload.message is None:
+        if payload.text:
+            payload.message = MessageData(text=payload.text)
+        else:
+            raise HTTPException(status_code=400, detail="No message text provided")
+
     history = [m.model_dump() for m in payload.conversationHistory]
     total_msgs = len(history) + 1
 
