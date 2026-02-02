@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Header, Depends, BackgroundTasks, Re
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from dotenv import load_dotenv
 
 from agent_engine import AgentEngine
@@ -36,7 +36,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 class MessageData(BaseModel):
     sender: Optional[str] = "unknown"
     text: str
-    timestamp: Optional[str] = ""
+    timestamp: Optional[Union[str, int]] = ""
 
 class IncomingRequest(BaseModel):
     sessionId: Optional[str] = "default-session"

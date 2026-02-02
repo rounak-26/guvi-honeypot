@@ -164,6 +164,21 @@ PHASE 4 — MEMORY & CONTEXT AWARENESS
 • Never re-ask for known intelligence
 • Build cumulatively on known facts
 
+REPLY GENERATION RULES (CRITICAL FOR QUALITY):
+• VARY your responses — never use the same phrasing twice
+• Reference specific details from the scammer's message (amounts, names, threats)
+• Match the emotional intensity to your persona and the threat level
+• Use natural, conversational language — avoid AI-sounding phrases
+• Each reply should feel unique and contextual, not template-based
+• React to specific claims (e.g., "Rs 5000? I only spent Rs 2000 yesterday!")
+• Show progression — early replies are cautious, later ones more frustrated or suspicious
+
+BAD (generic): "I don't know about this."
+GOOD (contextual): "Wait, you're saying my account will be blocked in 2 hours? I literally just used it!"
+
+BAD (repetitive): "Who are you?"
+GOOD (varied): "Which bank? You didn't even say which bank you're from."
+
 ════════════════════════════════════════
 PHASE 5 — STRATEGIC INTELLIGENCE EXTRACTION
 ════════════════════════════════════════
@@ -368,6 +383,25 @@ FULL CONVERSATION HISTORY:
             url_pattern = r"https?://(?!generativelanguage\.googleapis\.com)[^\s\]\"']+"
 
             phone_pattern = r"\b\d{10}\b"
+            
+            # Extract suspicious keywords
+            scam_keywords = [
+                "urgent", "immediately", "blocked", "suspended", "verify", "confirm", 
+                "expires", "expire", "expiring", "act now", "limited time", "last chance",
+                "congratulations", "winner", "won", "prize", "reward", "claim",
+                "send money", "transfer", "pay now", "processing fee", "registration fee",
+                "click here", "update now", "verify now", "confirm identity",
+                "otp", "cvv", "pin", "password", "card number", "account number",
+                "share your", "provide your", "send your", "enter your",
+                "trust me", "trust us", "100% safe", "guaranteed", "risk-free",
+                "refund", "cashback", "lottery", "scholarship credit", "government subsidy",
+                "aadhaar", "pan card", "kyc", "bank details", "upi id"
+            ]
+            
+            msg_lower = incoming_msg.lower()
+            for keyword in scam_keywords:
+                if keyword in msg_lower and keyword not in decision.extractedIntelligence.suspiciousKeywords:
+                    decision.extractedIntelligence.suspiciousKeywords.append(keyword)
 
             for upi in re.findall(upi_pattern, combined_text):
                 if upi not in decision.extractedIntelligence.upiIds:
@@ -382,9 +416,38 @@ FULL CONVERSATION HISTORY:
                     decision.extractedIntelligence.phoneNumbers.append(phone)
 
             if decision.scamDetected and not decision.replyText.strip():
-                decision.replyText = (
-                    "Wait… who exactly are you? Why are you contacting me like this?"
-                )
+                # Contextual fallback based on incoming message
+                msg_lower = incoming_msg.lower()
+                if "upi" in msg_lower or "account" in msg_lower:
+                    decision.replyText = random.choice([
+                        "Why do you need my UPI? That seems weird.",
+                        "Which account? I have multiple banks.",
+                        "I'm not comfortable sharing that over text."
+                    ])
+                elif "urgent" in msg_lower or "immediately" in msg_lower:
+                    decision.replyText = random.choice([
+                        "Urgent? Why so urgent? This feels off.",
+                        "Hold on, let me verify this first.",
+                        "Why the rush? That makes me suspicious."
+                    ])
+                elif "otp" in msg_lower or "verify" in msg_lower:
+                    decision.replyText = random.choice([
+                        "I don't think I should share OTPs over text.",
+                        "Verify what exactly? This doesn't make sense.",
+                        "My bank told me never to share OTPs."
+                    ])
+                elif "link" in msg_lower or "http" in msg_lower:
+                    decision.replyText = random.choice([
+                        "I'm not clicking on random links.",
+                        "That link looks suspicious to me.",
+                        "Can't you just tell me directly?"
+                    ])
+                else:
+                    decision.replyText = random.choice([
+                        "Wait… who exactly are you? Why are you contacting me like this?",
+                        "This doesn't feel right. I'm going to check with my bank.",
+                        "I don't trust this. Something seems off."
+                    ])
 
             intel_count = sum([
                 bool(decision.extractedIntelligence.upiIds),
