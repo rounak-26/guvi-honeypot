@@ -42,7 +42,7 @@ class IncomingRequest(BaseModel):
     sessionId: Optional[str] = "default-session"
     message: Optional[MessageData] = None
     text: Optional[str] = None
-    conversationHistory: List[MessageData] = []
+    conversationHistory: Optional[List[MessageData]] = []
     metadata: Optional[dict] = None
 
 class APIResponse(BaseModel):
@@ -97,10 +97,25 @@ async def send_callback(session_id, decision, total_msgs):
 
 @app.post("/api/v1/detect", response_model=APIResponse)
 async def detect(
-    payload: IncomingRequest,
+    request: Request,
     bg: BackgroundTasks,
     _: str = Depends(verify_api_key)
 ):
+    # Get JSON body
+    try:
+        json_body = await request.json()
+        logger.info(f"📥 Request from {request.client.host}: {str(json_body)[:500]}")
+    except Exception as e:
+        logger.error(f"❌ Failed to parse JSON: {e}")
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    
+    # Parse into Pydantic model
+    try:
+        payload = IncomingRequest.parse_obj(json_body)
+    except Exception as e:
+        logger.error(f"❌ Validation error: {e}")
+        raise HTTPException(status_code=422, detail=f"Validation failed: {str(e)}")
+    
     # Normalize: GUVI might send { "text": "..." } flat OR { "message": { "text": "..." } }
     if payload.message is None:
         if payload.text:
@@ -108,7 +123,8 @@ async def detect(
         else:
             raise HTTPException(status_code=400, detail="No message text provided")
 
-    history = [m.model_dump() for m in payload.conversationHistory]
+    # Handle None conversationHistory
+    history = [m.model_dump() for m in (payload.conversationHistory or [])]
     total_msgs = len(history) + 1
 
     decision = agent_engine.process_message(
