@@ -114,6 +114,14 @@ Legitimate examples:
 • OTP alerts
 • Transaction confirmations
 • Informational messages with no action request
+• Casual personal messages from friends/family (greetings, check-ins, meetups)
+
+EXAMPLES OF INNOCENT MESSAGES (scamDetected=false):
+1. "Hey! Long time no see. Coffee this weekend?"
+2. "Bhai, mom is calling you. Pick up the phone."
+3. "Are you free tomorrow? Let's catch up yaar."
+
+IMPORTANT: Messages that are simply casual conversation with NO financial request, NO urgency, NO threats, and NO suspicious links should be scamDetected=false.
 
 Only set scamDetected=true when malicious intent is reasonably confirmed.
 False positives are heavily penalized.
@@ -329,6 +337,15 @@ class AgentEngine:
         is_refund_notification = ("refund" in msg_lower and any(p in msg_lower for p in ["has been processed", "will appear in", "has been approved"]))
         is_bill_reminder = ("bill" in msg_lower and any(p in msg_lower for p in ["bescom.in", "pay now at", "service center", "blocked on feb"]))
         is_scholarship = ("scholarship" in msg_lower and "credited" in msg_lower)
+        
+        # Innocent personal messages - casual conversations, family, friends
+        is_innocent_personal = any(phrase in msg_lower for phrase in [
+            "call your mom", "call your dad", "call your parents",
+            "where are you", "are you free", "let's catch up",
+            "remember me", "classmate", "college friend",
+            "how have you been", "long time no see",
+            "didi", "bhai", "beta", "yaar" 
+        ]) and not any(bad in msg_lower for bad in ["upi", "account", "bank", "verify", "blocked", "urgent", "share", "send money", "payment"])
 
         # Scam indicators - if ANY of these exist, do NOT short-circuit as legit
         scam_indicators = [
@@ -349,7 +366,7 @@ class AgentEngine:
             return True
 
         # Even without legit sender, strong legit patterns alone are enough
-        if is_otp or is_transaction_alert or is_informational or is_password_reset or is_refund_notification or is_bill_reminder or is_scholarship:
+        if is_otp or is_transaction_alert or is_informational or is_password_reset or is_refund_notification or is_bill_reminder or is_scholarship or is_innocent_personal:
             return True
 
         return False
@@ -506,6 +523,27 @@ FULL CONVERSATION HISTORY:
         except Exception as e:
             logger.error(f"❌ LLM parsing failed, fallback used: {e}")
 
+            # Even if LLM fails, run regex extraction on raw text
+            combined_text = incoming_msg + " " + json.dumps(history)
+            
+            upi_pattern = r"[a-zA-Z0-9.\-_]{2,}@(?:upi|paytm|gpay|phonepe|ybl|okicici|okhdfcbank|oksbi|okaxis|icici|hdfc|sbi|axis|pbl|fbl|rbl|aiml|ezetpay|axi)\b"
+            url_pattern = r"https?://(?!generativelanguage\.googleapis\.com)[^\s\]\"']+"
+            phone_pattern = r"\b\d{10}\b"
+            
+            fallback_intel = ExtractedIntelligence()
+            
+            for upi in re.findall(upi_pattern, combined_text):
+                if upi not in fallback_intel.upiIds:
+                    fallback_intel.upiIds.append(upi)
+            
+            for link in re.findall(url_pattern, combined_text):
+                if link not in fallback_intel.phishingLinks:
+                    fallback_intel.phishingLinks.append(link)
+            
+            for phone in re.findall(phone_pattern, combined_text):
+                if phone not in fallback_intel.phoneNumbers:
+                    fallback_intel.phoneNumbers.append(phone)
+
             return AgentDecision(
                 scamDetected=True,
                 conversationStatus="ONGOING",
@@ -519,6 +557,6 @@ FULL CONVERSATION HISTORY:
                     "Why do you need that from me? Seems suspicious.",
                     "I don't trust this. I'm going to look into it myself.",
                 ]),
-                extractedIntelligence=ExtractedIntelligence(),
-                agentNotes="LLM unavailable. Flagged as potential scam by default for safety."
+                extractedIntelligence=fallback_intel,
+                agentNotes="LLM unavailable (429 rate limit). Flagged as potential scam by default for safety. Regex extraction applied."
             )
