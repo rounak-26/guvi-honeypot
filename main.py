@@ -2,7 +2,9 @@ import os
 import logging
 import uvicorn
 import requests
-from fastapi import FastAPI, HTTPException, Header, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Header, Depends, BackgroundTasks, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
@@ -19,6 +21,17 @@ CALLBACK_URL = "https://hackathon.guvi.in/api/updateHoneyPotFinalResult"
 app = FastAPI()
 
 agent_engine = AgentEngine()
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    body = await request.body()
+    logger.error(f"❌ VALIDATION ERROR from {request.client.host}")
+    logger.error(f"📦 Raw body: {body.decode('utf-8', errors='replace')}")
+    logger.error(f"🔍 Validation errors: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
 
 class MessageData(BaseModel):
     sender: Optional[str] = "unknown"
