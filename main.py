@@ -28,9 +28,20 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     logger.error(f"❌ VALIDATION ERROR from {request.client.host}")
     logger.error(f"📦 Raw body: {body.decode('utf-8', errors='replace')}")
     logger.error(f"🔍 Validation errors: {exc.errors()}")
+    
+    # Extract specific error messages
+    errors = []
+    for error in exc.errors():
+        field = " -> ".join(str(x) for x in error['loc'])
+        errors.append(f"{field}: {error['msg']}")
+    
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors()}
+        content={
+            "error": "INVALID_REQUEST_BODY",
+            "details": errors,
+            "hint": "Ensure request includes: sessionId (str), message.text (str), message.sender (str), message.timestamp (int or str)"
+        }
     )
 
 class MessageData(BaseModel):
@@ -97,25 +108,10 @@ async def send_callback(session_id, decision, total_msgs):
 
 @app.post("/api/v1/detect", response_model=APIResponse)
 async def detect(
-    request: Request,
+    payload: IncomingRequest,
     bg: BackgroundTasks,
     _: str = Depends(verify_api_key)
 ):
-    # Get JSON body
-    try:
-        json_body = await request.json()
-        logger.info(f"📥 Request from {request.client.host}: {str(json_body)[:500]}")
-    except Exception as e:
-        logger.error(f"❌ Failed to parse JSON: {e}")
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
-    
-    # Parse into Pydantic model
-    try:
-        payload = IncomingRequest.parse_obj(json_body)
-    except Exception as e:
-        logger.error(f"❌ Validation error: {e}")
-        raise HTTPException(status_code=422, detail=f"Validation failed: {str(e)}")
-    
     # Normalize: GUVI might send { "text": "..." } flat OR { "message": { "text": "..." } }
     if payload.message is None:
         if payload.text:
