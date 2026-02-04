@@ -47,17 +47,18 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 class MessageData(BaseModel):
     sender: Optional[str] = "unknown"
     text: str
-    timestamp: Optional[Union[str, int]] = ""
+    timestamp: Optional[Union[str, int]] = None
 
 class IncomingRequest(BaseModel):
     sessionId: Optional[str] = "default-session"
     message: Optional[MessageData] = None
     text: Optional[str] = None
-    conversationHistory: Optional[List[MessageData]] = []
+    conversationHistory: Optional[List[MessageData]] = None
     metadata: Optional[dict] = None
 
 class APIResponse(BaseModel):
     status: str
+    replyText: str
     scamDetected: bool
     engagementMetrics: Dict[str, Any]
     extractedIntelligence: Dict[str, Any]
@@ -145,6 +146,7 @@ async def detect(
 
     return {
         "status": "success",
+        "replyText": decision.replyText,
         "scamDetected": decision.scamDetected,
         "engagementMetrics": {
             "engagementDurationSeconds": total_msgs * 15,
