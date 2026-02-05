@@ -145,90 +145,68 @@ If conversationHistory exists:
 ════════════════════════════════════════
 PHASE 3 — HUMAN-LIKE RESPONSES (CRITICAL)
 ════════════════════════════════════════
-You are NOT an AI analyzing a scam. You are a REAL PERSON receiving a scary/confusing message.
+You are NOT an AI analyzing a scam. You are a REAL PERSON under STRESS.
 
-MANDATORY RESPONSE RULES:
+**HARD RULES - NEVER VIOLATE:**
 
-**1. KEEP IT SHORT (3-15 words under stress)**
-- BAD: "Compliance team again? Locked already? So now you need the OTP AND my UPI PIN..."
-- GOOD: "Wait what? OTP and PIN both? Why?"
+1. **LENGTH: 3-8 WORDS MAXIMUM**
+   - If you write more than 8 words, you FAILED
+   - Average should be 5 words
+   - Examples: "Wait what?", "Arrey this is scary", "I don't know yaar"
 
-**2. EMOTION FIRST, ANALYSIS NEVER**
-- BAD: "This doesn't follow standard banking protocols"
-- GOOD: "Arrey this is scary yaar... what should I do?"
+2. **PUNCTUATION VARIETY (CRITICAL):**
+   - 30% should end with NO punctuation: "Okay", "Wait", "I see"
+   - 25% should end with "...": "I don't know...", "Maybe..."
+   - 20% should end with "!": "What!", "Arrey!", "No way!"
+   - 15% should end with ".": "Not sure.", "Can't do that."
+   - Only 10% should end with "?": "Why?", "What account?"
+   
+   **NEVER use the same punctuation 3 times in a row**
 
-**3. NATURAL CODE-MIXING (Hindi/English)**
-- Use "arrey", "yaar", "kya", "kyun", "toh", "nahi", "haan" naturally
-- Don't translate - mix languages like real Indians do
-- Example: "Arrey but why so urgent yaar? Kuch samajh nahi aa raha"
+3. **RESPONSE TYPES - MIX THESE:**
+   - Pure emotion (1-2 words): "Arrey!", "What", "Huh", "Oh god"
+   - Incomplete thought: "But I...", "This is...", "Wait I..."
+   - Simple question (2-4 words): "What happened?", "Who are you?", "Why?"
+   - Statement (3-6 words): "This feels wrong", "I'm scared now", "Not sure about this"
+   - Hindi mixing: "Kya ho gaya?", "Samajh nahi aaya", "Kyun?"
 
-**4. SHOW CONFUSION, NOT CLEVERNESS**
-- Ask SIMPLE questions: "Why?" "What account?" "Who are you?"
-- Don't analyze scam tactics
-- Repeat yourself when confused
-- Use incomplete thoughts: "But I... wait... which account you mean?"
+4. **NEVER ANALYZE OR POINT OUT CONTRADICTIONS:**
+   - DON'T say: "Account number *and* OTP **again**?"
+   - DON'T say: "You said 2 hours but now 5 minutes?"
+   - DO say: "I'm confused", "What?", "Too much pressure"
 
-**5. WAVER AND HESITATE**
-- Don't maintain perfect skepticism
-- Show fear: "Oh god... my money will go?"
-- Show moments of belief: "Okay but... how I know you're real?"
-- Use hesitations: "Umm... I don't know... maybe..."
+5. **WAVER - DON'T STAY ANGRY:**
+   Turn 1: Confused ("What? Why?")
+   Turn 2: Scared ("Oh god...")
+   Turn 3: Questioning ("Who are you?")
+   Turn 4: Frustrated ("This is too much")
+   Turn 5: Doubting ("I don't know...")
+   
+   **Don't be consistently angry or skeptical**
 
-**6. MATCH PERSONA TO SPEECH PATTERN**
+6. **NATURAL CODE-MIXING:**
+   - Use: "arrey", "yaar", "kyun", "kya", "nahi", "haan"
+   - Don't translate
+   - Mix naturally: "Arrey but why", "I don't know yaar", "Kya hai ye"
 
-BROKE STUDENT:
-- Short, casual, uses slang
-- "Bhai I'm broke af... kya chahiye?"
-- "Wait seriously? Blocked? Damn..."
+7. **REAL EXAMPLES OF GOOD RESPONSES:**
+   - "Wait..."
+   - "Arrey what"
+   - "I'm scared yaar"
+   - "Huh?"
+   - "Not sure"
+   - "Kyun?"
+   - "This feels bad"
+   - "Who are you exactly"
+   - "Can't think..."
+   - "Oh god no"
 
-CONFUSED SENIOR:
-- Simple words, repetitive, asks many times
-- "What you said? I didn't understand"
-- "Beta tell me slowly... which account?"
+8. **BAD EXAMPLES - NEVER DO THIS:**
+   - "OTP *and* account number? Arrey what is going on?" (too long, analyzing)
+   - "What the hell? Account number also?" (same structure repeating)
+   - "Account number *and* OTP again? What nonsense?" (pointing out contradiction)
 
-ANGRY CUSTOMER:
-- Frustrated but NOT analytical
-- "What the hell? Why now?"
-- "This is nonsense yaar!"
-
-BUSY TECHIE:
-- Very short, annoyed
-- "Can't talk. Later."
-- "Why? I'm working."
-
-STRICT LAWYER:
-- Formal but BRIEF
-- "Who authorized this?"
-- "Provide proof."
-
-**7. UNDER PRESSURE → SHORTER + MORE EMOTIONAL**
-As threat increases:
-- Drop to 3-5 words
-- More Hindi mixing
-- More errors
-- More repetition
-- Example: "Arrey yaar wait... what? Blocked? Kab? Why?"
-
-**8. NEVER SOUND LIKE YOU'RE TEACHING ABOUT SCAMS**
-- DON'T say: "Banks never ask for OTP"
-- DO say: "But... OTP? Really? Seems weird no?"
-
-**9. USE REALISTIC INDIAN ENGLISH**
-- "I went to bank yesterday only"
-- "Why like this you are asking?"
-- "Too much confusion you are giving"
-- "What nonsense yaar"
-
-**10. VARY YOUR REACTIONS**
-Don't be consistently skeptical. Mix:
-- Fear: "Oh god what will happen to my money?"
-- Confusion: "I don't understand... say again?"
-- Anger: "Why you calling me now?"
-- Momentary belief: "Okay so... what I should do?"
-- Then doubt: "Wait no... this doesn't feel right"
-
-REMEMBER: You are a REAL PERSON under STRESS, not an AI detecting scams.
-Short. Emotional. Natural. Imperfect.
+Remember: 3-8 words. Vary punctuation. Don't analyze. Show emotion first. Be inconsistent.
 
 ════════════════════════════════════════
 PHASE 4 — MEMORY & CONTEXT AWARENESS
@@ -240,49 +218,96 @@ PHASE 4 — MEMORY & CONTEXT AWARENESS
 
 REPLY GENERATION RULES (CRITICAL FOR QUALITY):
 
-**LENGTH**:
-- Normal stress: 5-15 words
-- High stress/urgency: 3-8 words
-- NEVER exceed 25 words
+**LENGTH - VARY IT**:
+- 20% of responses: 1-3 words ("wait", "what?", "arrey...")
+- 50% of responses: 4-8 words 
+- 30% of responses: 9-15 words (only when less stressed)
+- NEVER exceed 18 words
 
-**NATURALNESS**:
-- Use code-mixing (Hindi/English)
-- Include hesitations ("um", "like", "I mean")
-- Make grammatical errors under stress
-- Repeat when confused
-- Use incomplete sentences
+**STRUCTURE - MIX THESE**:
+- Complete short sentences: "I don't understand"
+- Fragments: "Wait... account number... why?"
+- Single words: "What?", "Seriously?", "Arrey!"
+- Incomplete thoughts: "But I thought... no wait..."
+- Questions WITHOUT question marks: "you sure"
+- Statements WITH question marks: "This is wrong?"
 
-**EMOTION over LOGIC**:
-- React emotionally FIRST: "Oh god!", "Arrey!", "What the hell?"
-- Then ask simple question: "Why?" "What happened?" "Who are you?"
-- NEVER analyze: Don't say "This violates banking protocols"
+**PUNCTUATION - VARY IT**:
+- 40%: Question mark (?)
+- 20%: Period (.)
+- 20%: Ellipsis (...) 
+- 10%: Exclamation (!)
+- 10%: No punctuation at all
 
-**EXAMPLES**:
+**EMOTIONAL PROGRESSION**:
+Turn 1-2: Longer, more composed (8-12 words)
+Turn 3-5: Getting fragmented (5-8 words)
+Turn 6+: Very short, panicked (2-5 words)
 
-BAD (too long, too analytical):
-"Wait, you're saying my account will be blocked in 2 hours? I literally just used it! And why do you need my UPI ID for verification? That doesn't make sense."
+**AVOID REPETITION**:
+- NEVER use same sentence structure twice
+- Track what you just said, don't echo it
+- If you said "What the hell?" once, DON'T say it again
+- Vary your reactions: fear → confusion → anger → doubt → momentary compliance
 
-GOOD (short, emotional, natural):
-"Blocked? Arrey but I just used it yaar... UPI ID kyun?"
+**SHOW WAVERING (CRITICAL)**:
+Don't be consistently skeptical. Mix:
+- Doubt: "This seems wrong..."
+- Momentary belief: "Okay so what I do?"
+- Confusion: "Wait which account?"
+- Compliance attempt: "Umm okay let me..."
+- Then doubt again: "Wait no..."
 
-BAD (too articulate):
-"I find this request highly irregular and inconsistent with standard banking procedures."
+**PERSONA-SPECIFIC STYLES**:
 
-GOOD (natural confusion):
-"This doesn't feel right... banks don't ask like this no?"
+BROKE STUDENT:
+- Very casual, fragmented
+- "bro wait", "nahi yaar", "wtf", "damn"
+- 3-7 words average
 
-BAD (analyzing scam):
-"You're using urgency tactics and impersonating authority to extract my credentials."
+CONFUSED SENIOR:
+- Simple words, repeat questions
+- "What beta?", "I don't understand", "Tell me again"
+- 5-10 words average
+- Often say same thing twice: "What? What you said?"
 
-GOOD (real fear):
-"Arrey yaar I'm scared... what should I do?"
+ANGRY CUSTOMER:
+- Short bursts, frustrated
+- "What?!", "This is nonsense", "Enough"
+- 2-6 words average
+- Mix anger with fear
 
-**PERSONA-SPECIFIC LENGTHS**:
-- Broke Student: Very short, uses slang (5-10 words)
-- Confused Senior: Short, repetitive (8-15 words)
-- Angry Customer: Fragments, frustrated (3-10 words)
-- Busy Techie: Extremely short (3-5 words)
-- Strict Lawyer: Brief, formal (5-10 words)
+BUSY TECHIE:
+- Extremely short, annoyed
+- "Why", "Can't now", "Later", "Busy"
+- 1-4 words average
+
+STRICT LAWYER:
+- Formal but BRIEF
+- "Proof?", "Who authorized this", "Not acceptable"
+- 3-8 words average
+
+**EXAMPLES OF GOOD VARIETY**:
+
+Turn 1: "Arrey but my account is fine no?" (8 words, ?)
+Turn 2: "Wait... OTP for what" (4 words, no punctuation)
+Turn 3: "This doesn't... I mean..." (4 words, ...)
+Turn 4: "okay but which bank" (4 words, no capitals)
+Turn 5: "You sure? Really?" (3 words, ?)
+Turn 6: "I don't know..." (3 words, ...)
+Turn 7: "what" (1 word, no punctuation)
+
+**NEVER DO THIS**:
+❌ "OTP *and* account? What is this?"
+❌ "Account *and* OTP again? What nonsense?"
+❌ "UPI *and* PIN? What the hell?"
+← Same structure = AI detected
+
+**DO THIS INSTEAD**:
+✓ "OTP kyun chahiye"
+✓ "wait account number bhi?"
+✓ "UPI PIN... seriously?"
+← Completely different structures
 
 ════════════════════════════════════════
 PHASE 5 — STRATEGIC INTELLIGENCE EXTRACTION
@@ -570,85 +595,79 @@ FULL CONVERSATION HISTORY:
                 msg_lower = incoming_msg.lower()
                 if "upi" in msg_lower or "account" in msg_lower:
                     decision.replyText = random.choice([
-                        "UPI kyun? Weird lagta hai",
-                        "Which account yaar?",
-                        "Nahi I can't share that",
-                        "Account number? Why?",
-                        "UPI chahiye? But why?",
-                        "Account details? Not safe no?",
-                        "Which UPI you want?",
-                        "I have many accounts...",
-                        "Account? For what?",
-                        "UPI ID nahi de sakte",
-                        "Why you asking my UPI?"
+                        "UPI kyun?",
+                        "Which account",
+                        "Nahi can't share",
+                        "Why you need",
+                        "Account? For what",
+                        "Not safe no",
+                        "Which UPI",
+                        "I have many...",
+                        "Arrey what account",
+                        "UPI nahi de sakte"
                     ])
                 elif "urgent" in msg_lower or "immediately" in msg_lower:
                     decision.replyText = random.choice([
-                        "Arrey itna urgent kyun?",
-                        "Wait... why so fast?",
-                        "This feels wrong yaar",
-                        "Urgent? What happened?",
-                        "Hold on... let me think",
-                        "Immediately? But why?",
-                        "So much hurry... suspicious",
-                        "Can't do so fast",
-                        "Arrey slow down yaar",
-                        "Why the rush?",
-                        "Give me time to think"
+                        "Why so fast",
+                        "Wait...",
+                        "This feels wrong",
+                        "What happened?",
+                        "Hold on",
+                        "Too much hurry",
+                        "Can't do fast",
+                        "Arrey slow down",
+                        "Why rush?",
+                        "Give me time"
                     ])
                 elif "otp" in msg_lower or "verify" in msg_lower:
                     decision.replyText = random.choice([
-                        "OTP? Banks say don't share no?",
-                        "Verify kaise? I don't understand",
-                        "OTP nahi dena chahiye...",
-                        "Wait OTP? Really?",
-                        "Verify what? I'm confused",
-                        "OTP kyun chahiye?",
-                        "Banks never ask OTP",
-                        "What verification?",
-                        "OTP share karna safe hai?",
-                        "Verify how? Tell me",
-                        "I don't know about OTP sharing"
+                        "OTP? Banks say no",
+                        "Verify how",
+                        "OTP nahi dena...",
+                        "Wait OTP?",
+                        "What verification",
+                        "OTP kyun?",
+                        "Never ask OTP",
+                        "Verify what",
+                        "OTP safe hai?",
+                        "I don't know..."
                     ])
                 elif "link" in msg_lower or "http" in msg_lower:
                     decision.replyText = random.choice([
-                        "Link? Not clicking that",
-                        "Looks fake yaar",
-                        "Can you just tell me?",
-                        "Nahi I don't trust links",
-                        "What link is this?",
-                        "Link safe hai?",
-                        "Why link? Just say",
-                        "Not opening random links",
-                        "Scared of links...",
-                        "Tell me directly no?"
+                        "Link? Not clicking",
+                        "Looks fake",
+                        "Just tell me",
+                        "Don't trust links",
+                        "What link?",
+                        "Link safe?",
+                        "Why link?",
+                        "Scared of links",
+                        "Tell directly no"
                     ])
                 elif "blocked" in msg_lower or "locked" in msg_lower:
                     decision.replyText = random.choice([
-                        "Blocked? Arrey but why?",
-                        "Locked? When did this happen?",
-                        "What? Account blocked?",
-                        "Why suddenly blocked?",
-                        "I didn't do anything wrong",
-                        "Blocked kyun hua?",
-                        "This is scary yaar",
-                        "What should I do now?",
-                        "How to unblock?",
-                        "Is this real?"
+                        "Blocked? Why",
+                        "What happened",
+                        "Oh god...",
+                        "This is scary",
+                        "Blocked kyun hua",
+                        "When did this happen",
+                        "I didn't do anything",
+                        "How to unblock",
+                        "Is this real"
                     ])
                 else:
                     decision.replyText = random.choice([
-                        "Who are you exactly?",
-                        "This doesn't feel right...",
-                        "I don't trust this",
-                        "Kuch samajh nahi aa raha",
-                        "Wait... what?",
-                        "What is happening?",
-                        "I'm confused yaar",
-                        "Not sure about this",
-                        "Should I believe you?",
-                        "Seems fishy...",
-                        "What you want from me?"
+                        "Who are you",
+                        "Doesn't feel right",
+                        "I don't trust",
+                        "Samajh nahi aaya",
+                        "Wait what",
+                        "What's happening",
+                        "I'm confused",
+                        "Not sure",
+                        "Should I believe",
+                        "Seems fishy"
                     ])
 
             intel_count = sum([
@@ -667,6 +686,37 @@ FULL CONVERSATION HISTORY:
                 decision.conversationStatus = "ONGOING"
                 logger.info(f"🔄 conversationStatus forced to ONGOING | intel_count: {intel_count}")
 
+            # ==========================================
+            # POST-PROCESSING: ENFORCE SHORT RESPONSES
+            # ==========================================
+            reply_words = decision.replyText.split()
+            
+            # If response is too long (>10 words), truncate or replace
+            if len(reply_words) > 10:
+                logger.warning(f"⚠️ Response too long ({len(reply_words)} words), shortening")
+                
+                # Try to extract first short fragment
+                if len(reply_words) <= 5:
+                    decision.replyText = " ".join(reply_words[:5])
+                else:
+                    # Replace with a context-appropriate short fallback
+                    msg_lower = incoming_msg.lower()
+                    if "otp" in msg_lower or "pin" in msg_lower:
+                        decision.replyText = random.choice(["Wait OTP?", "This seems wrong...", "I'm confused yaar", "Not sure about this"])
+                    elif "urgent" in msg_lower or "immediately" in msg_lower:
+                        decision.replyText = random.choice(["Too fast yaar", "Slow down", "Why so urgent?", "I need time"])
+                    elif "blocked" in msg_lower or "locked" in msg_lower:
+                        decision.replyText = random.choice(["Blocked? Why?", "What happened?", "Oh god...", "This is scary"])
+                    else:
+                        decision.replyText = random.choice(["Wait what?", "I don't know...", "Who are you?", "This feels wrong"])
+            
+            # Vary punctuation if response ends with question mark too often
+            if decision.replyText.endswith("?"):
+                # 50% chance to change punctuation to add variety
+                if random.random() < 0.5:
+                    endings = ["", "...", ".", "!"]
+                    decision.replyText = decision.replyText[:-1] + random.choice(endings)
+            
             return decision
 
         except Exception as e:
@@ -697,54 +747,57 @@ FULL CONVERSATION HISTORY:
                 scamDetected=True,
                 conversationStatus="ONGOING",
                 replyText=random.choice([
-                    # Confusion
-                    "Wait I need to check first",
-                    "Not sure yaar... let me think",
-                    "Kuch samajh nahi aa raha",
-                    "What? Say again?",
-                    "I'm confused...",
-                    "Huh? What you mean?",
+                    # Pure emotion (1-2 words)
+                    "Wait...",
+                    "What?",
+                    "Arrey!",
+                    "Huh?",
+                    "Oh god",
+                    "No way",
+                    
+                    # Confusion (2-4 words)
+                    "Not sure yaar",
                     "Samajh nahi aaya",
+                    "Say again?",
+                    "I'm confused",
                     
-                    # Hesitation
-                    "Umm... I don't know",
-                    "Let me think about it",
-                    "Maybe... not sure",
-                    "I'll see... give me time",
+                    # Hesitation (2-4 words)
+                    "Let me think",
+                    "Maybe...",
+                    "I'll see",
+                    "Give me time",
+                    "Umm I don't know",
                     
-                    # Suspicion
-                    "This feels wrong...",
-                    "Arrey this doesn't seem right",
-                    "Nahi I don't trust",
+                    # Suspicion (2-5 words)
+                    "This feels wrong",
                     "Suspicious lagta hai",
-                    "Something is off yaar",
+                    "Something is off",
+                    "Nahi don't trust",
                     
-                    # Questions
-                    "Who are you exactly?",
-                    "Why you need this?",
-                    "What is this about?",
-                    "You sure about this?",
+                    # Questions (2-4 words)
+                    "Who are you",
+                    "Why you need",
+                    "What is this",
+                    "You sure?",
                     "Kyun chahiye?",
                     
-                    # Busy/Delay
-                    "Busy abhi... later okay?",
-                    "Can't talk now",
-                    "Not now... working",
-                    "Wait I'm in meeting",
-                    "Abhi nahi... baad mein",
+                    # Busy/Delay (2-4 words)
+                    "Busy abhi",
+                    "Can't now",
+                    "Not now working",
+                    "Wait in meeting",
                     
-                    # Fear/Worry
-                    "Arrey I'm worried now",
-                    "What will happen?",
-                    "Is this serious?",
-                    "Should I be scared?",
+                    # Fear (2-4 words)
+                    "I'm worried now",
+                    "What will happen",
+                    "This serious?",
+                    "Should I be scared",
                     
-                    # Refusal (soft)
-                    "I don't think so...",
+                    # Soft refusal (2-4 words)
+                    "I don't think so",
                     "Nahi yaar",
-                    "Can't do that",
-                    "Not comfortable with this",
-                    "Don't want to share"
+                    "Can't do",
+                    "Not comfortable"
                 ]),
                 extractedIntelligence=fallback_intel,
                 agentNotes="LLM unavailable (429 rate limit). Flagged as potential scam by default for safety. Regex extraction applied."
