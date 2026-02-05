@@ -93,8 +93,7 @@ async def send_callback(session_id, decision, total_msgs):
                 CALLBACK_URL,
                 json=payload,
                 headers={
-                    "Content-Type": "application/json",
-                    "x-api-key": API_SECRET
+                    "Content-Type": "application/json"
                 },
                 timeout=5
             )
