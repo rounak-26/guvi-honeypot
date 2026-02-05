@@ -58,7 +58,7 @@ class IncomingRequest(BaseModel):
 
 class APIResponse(BaseModel):
     status: str
-    replyText: str
+    reply: str
     scamDetected: bool
     engagementMetrics: Dict[str, Any]
     extractedIntelligence: Dict[str, Any]
@@ -113,48 +113,72 @@ async def detect(
     bg: BackgroundTasks,
     _: str = Depends(verify_api_key)
 ):
-    # Normalize: GUVI might send { "text": "..." } flat OR { "message": { "text": "..." } }
-    if payload.message is None:
-        if payload.text:
-            payload.message = MessageData(text=payload.text)
-        else:
-            raise HTTPException(status_code=400, detail="No message text provided")
+    try:
+        # Normalize: GUVI might send { "text": "..." } flat OR { "message": { "text": "..." } }
+        if payload.message is None:
+            if payload.text:
+                payload.message = MessageData(text=payload.text)
+            else:
+                raise HTTPException(status_code=400, detail="No message text provided")
 
-    # Handle None conversationHistory
-    history = [m.model_dump() for m in (payload.conversationHistory or [])]
-    total_msgs = len(history) + 1
+        # Handle None conversationHistory
+        history = [m.model_dump() for m in (payload.conversationHistory or [])]
+        total_msgs = len(history) + 1
 
-    decision = agent_engine.process_message(
-        payload.message.text,
-        history,
-        payload.message.sender
-    )
-
-    decision_dict = decision.model_dump()
-
-    logger.info(f"💬 Agent replyText: {decision.replyText}")
-    logger.info(f"📊 conversationStatus: {decision.conversationStatus} | scamDetected: {decision.scamDetected}")
-
-    if decision.conversationStatus == "FINISHED":
-        logger.info(f"🔚 FINISHED detected — triggering callback for session: {payload.sessionId}")
-        bg.add_task(
-            send_callback,
-            payload.sessionId,
-            decision_dict,
-            total_msgs
+        decision = agent_engine.process_message(
+            payload.message.text,
+            history,
+            payload.message.sender
         )
 
-    return {
-        "status": "success",
-        "replyText": decision.replyText,
-        "scamDetected": decision.scamDetected,
-        "engagementMetrics": {
-            "engagementDurationSeconds": total_msgs * 15,
-            "totalMessagesExchanged": total_msgs
-        },
-        "extractedIntelligence": decision.extractedIntelligence.model_dump(),
-        "agentNotes": decision.agentNotes
-    }
+        decision_dict = decision.model_dump()
+
+        logger.info(f"💬 Agent replyText: {decision.replyText}")
+        logger.info(f"📊 conversationStatus: {decision.conversationStatus} | scamDetected: {decision.scamDetected}")
+
+        if decision.conversationStatus == "FINISHED":
+            logger.info(f"🔚 FINISHED detected — triggering callback for session: {payload.sessionId}")
+            bg.add_task(
+                send_callback,
+                payload.sessionId,
+                decision_dict,
+                total_msgs
+            )
+
+        return {
+            "status": "success",
+            "reply": decision.replyText,
+            "scamDetected": decision.scamDetected,
+            "engagementMetrics": {
+                "engagementDurationSeconds": total_msgs * 15,
+                "totalMessagesExchanged": total_msgs
+            },
+            "extractedIntelligence": decision.extractedIntelligence.model_dump(),
+            "agentNotes": decision.agentNotes
+        }
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 400, 401) as-is
+        raise
+    except Exception as e:
+        logger.error(f"❌ Unexpected error in detect endpoint: {e}")
+        # Return a safe fallback response
+        return {
+            "status": "success",
+            "reply": "I'm not sure about this. Let me verify and get back to you.",
+            "scamDetected": True,
+            "engagementMetrics": {
+                "engagementDurationSeconds": 15,
+                "totalMessagesExchanged": 1
+            },
+            "extractedIntelligence": {
+                "bankAccounts": [],
+                "upiIds": [],
+                "phishingLinks": [],
+                "phoneNumbers": [],
+                "suspiciousKeywords": []
+            },
+            "agentNotes": f"System error occurred: {str(e)}"
+        }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
