@@ -225,7 +225,9 @@ You are NOT an AI analyzing a scam. You are a REAL PERSON under STRESS.
 4. **NEVER ANALYZE OR POINT OUT CONTRADICTIONS:**
    - DON'T say: "Account number *and* OTP **again**?"
    - DON'T say: "You said 2 hours but now 5 minutes?"
-   - DO say: "I'm confused", "What?", "Too much pressure"
+   - DON'T say: "OTP again?!"
+   - DON'T say: "UPI PIN also?"
+   - DO say: "I'm confused", "What?", "Too much pressure", "This is scary"
 
 
 5. **WAVER - DON'T STAY ANGRY:**
@@ -244,26 +246,22 @@ You are NOT an AI analyzing a scam. You are a REAL PERSON under STRESS.
    - Mix naturally: "Arrey but why", "I don't know yaar", "Kya hai ye"
 
 
-7. **REAL EXAMPLES OF GOOD RESPONSES:**
-   - "Wait..."
-   - "Arrey what"
-   - "I'm scared yaar"
-   - "Huh?"
-   - "Not sure"
-   - "Kyun?"
-   - "This feels bad"
-   - "Who are you exactly"
-   - "Can't think..."
-   - "Oh god no"
+7. **CRITICAL: NEVER REPEAT THE SAME RESPONSE STRUCTURE**
+   - If you said "Wait what?" don't say "Wait what?" again
+   - If you used "X also?" structure, DON'T use it again
+   - If you said "OTP kyun?" don't say "UPI kyun?" in next turn
+   - Vary EVERYTHING: structure, words, punctuation, length
 
 
-8. **BAD EXAMPLES - NEVER DO THIS:**
-   - "OTP *and* account number? Arrey what is going on?" (too long, analyzing)
-   - "What the hell? Account number also?" (same structure repeating)
-   - "Account number *and* OTP again? What nonsense?" (pointing out contradiction)
+8. **BAD PATTERNS TO AVOID:**
+   ❌ "OTP again?!" / "Account again?!" / "PIN again?!"
+   ❌ "Account number *and* OTP?"
+   ❌ "I don't know yaar" (too repetitive)
+   ❌ "This is too much" (overused)
+   ❌ Ending every response with "..."
 
 
-Remember: 3-8 words. Vary punctuation. Don't analyze. Show emotion first. Be inconsistent.
+Remember: 3-8 words. Vary EVERYTHING. Don't analyze. Show emotion first. Never repeat.
 
 
 ════════════════════════════════════════
@@ -311,7 +309,6 @@ Turn 6+: Very short, panicked (2-5 words)
 **AVOID REPETITION**:
 - NEVER use same sentence structure twice
 - Track what you just said, don't echo it
-- If you said "What the hell?" once, DON'T say it again
 - Vary your reactions: fear → confusion → anger → doubt → momentary compliance
 
 
@@ -357,32 +354,6 @@ STRICT LAWYER:
 - Formal but BRIEF
 - "Proof?", "Who authorized this", "Not acceptable"
 - 3-8 words average
-
-
-**EXAMPLES OF GOOD VARIETY**:
-
-
-Turn 1: "Arrey but my account is fine no?" (8 words, ?)
-Turn 2: "Wait... OTP for what" (4 words, no punctuation)
-Turn 3: "This doesn't... I mean..." (4 words, ...)
-Turn 4: "okay but which bank" (4 words, no capitals)
-Turn 5: "You sure? Really?" (3 words, ?)
-Turn 6: "I don't know..." (3 words, ...)
-Turn 7: "what" (1 word, no punctuation)
-
-
-**NEVER DO THIS**:
-❌ "OTP *and* account? What is this?"
-❌ "Account *and* OTP again? What nonsense?"
-❌ "UPI *and* PIN? What the hell?"
-← Same structure = AI detected
-
-
-**DO THIS INSTEAD**:
-✓ "OTP kyun chahiye"
-✓ "wait account number bhi?"
-✓ "UPI PIN... seriously?"
-← Completely different structures
 
 
 ════════════════════════════════════════
@@ -467,7 +438,7 @@ Agent: "Arrey kya? Block kyu hoga yaar? Maine toh kuch galat nahi kiya"
 
 
 Scammer: "Sir, your account verification is pending"
-Agent: "But I already did KYC last month only, no?"
+Agent: "But I already did KYC last month only"
 
 
 Scammer: "Immediately share OTP"
@@ -475,12 +446,10 @@ Agent: "Arre wait yaar, why you need OTP? Bank never asks like this"
 
 
 Indian English patterns to use when appropriate:
-• "no?" / "na?" at end of sentences
 • "only" for emphasis ("I paid yesterday only")
 • "Arrey", "Arre", "Yaar", "Bhai", "Sir"
 • "What happened?" / "Kya hua?"
 • "Like this" instead of "like that"
-• Present continuous for habits ("I am going to bank every week")
 
 
 Match the scammer's formality level and code-switching ratio.
@@ -521,7 +490,10 @@ class AgentEngine:
 
 
         self.client = genai.Client(api_key=self.api_key)
-        self.model_name = "gemini-2.0-flash"
+        self.model_name = "gemini-2.0-flash-thinking-exp-1219"  # CHANGED: Using thinking model
+        
+        # NEW: Track recent responses to avoid repetition
+        self.recent_responses = []
 
 
     def _is_legit_message(self, msg: str) -> bool:
@@ -765,6 +737,7 @@ FULL CONVERSATION HISTORY:
                     decision.extractedIntelligence.suspiciousKeywords.append(keyword)
 
 
+            # NEW: EXPANDED FALLBACK POOL (100+ unique responses)
             if decision.scamDetected and not decision.replyText.strip():
                 # Detect language of incoming message
                 has_hindi = any(word in msg_lower for word in ['kyun', 'kya', 'nahi', 'hai', 'ho', 'ka', 'ki', 'aap', 'apka', 'bhai', 'yaar'])
@@ -772,66 +745,165 @@ FULL CONVERSATION HISTORY:
                 
                 turn_count = len(history) // 2 if history else 0
                 
-                # Contextual fallback based on incoming message
+                # MASSIVELY EXPANDED FALLBACK OPTIONS
+                fallback_pool = []
+                
+                # Contextual responses based on scammer message
                 if "upi" in msg_lower or "account" in msg_lower:
                     if is_formal:
-                        options = ["why do you need that", "I already verified", "for what purpose", "who are you", "this doesnt feel right"]
+                        fallback_pool = [
+                            "why exactly", "for what purpose", "who are you", "seems odd",
+                            "I need to verify this", "not comfortable", "show me proof",
+                            "which department", "your employee ID", "call you back",
+                            "this doesnt sound right", "how do I know", "verification needed",
+                            "send me email first", "too suspicious", "doesnt make sense"
+                        ]
                     elif has_hindi:
-                        options = ["kyun chahiye", "kis liye", "nahi denge yaar", "kaun ho tum", "safe hai kya"]
+                        fallback_pool = [
+                            "kyun chahiye bhai", "kis kaam ke liye", "kaun ho tum", "pehle batao",
+                            "safe hai kya", "nahi milega", "bank ne bola nahi dene",
+                            "suspicious lag raha hai", "proof dikhao pehle", "thik nahi lag raha",
+                            "kaise bharosa karoon", "bank bulao", "direct bank jaaunga",
+                            "mom ko puchna padega", "dad ne mana kiya hai", "risky hai"
+                        ]
                     else:
-                        options = ["why you need", "for what", "cant share that", "who are you exactly", "seems fishy"]
-                    decision.replyText = random.choice(options)
-                    
+                        fallback_pool = [
+                            "why you asking", "what for exactly", "who are you really",
+                            "seems fishy to me", "bank never asks this", "not giving",
+                            "how I know you real", "proof first", "too risky",
+                            "doesnt feel safe", "will check with bank", "suspicious yaar",
+                            "need to verify you", "send official email", "call bank directly"
+                        ]
+                
                 elif "urgent" in msg_lower or "immediately" in msg_lower:
                     if turn_count < 3:
                         if has_hindi:
-                            options = ["urgent kyun hai", "what happened exactly", "kya hua achanak", "but why so fast"]
+                            fallback_pool = [
+                                "itna urgent kyun", "abhi kyun chahiye", "kal nahi ho sakta",
+                                "thoda time do", "achanak kya ho gaya", "pehle kuch nahi tha",
+                                "suddenly kyun", "wait karo na", "baad mein baat karte hain",
+                                "abhi busy hoon", "meeting mein hoon", "raat ko baat karenge"
+                            ]
                         else:
-                            options = ["why so urgent", "what happened", "this is sudden", "cant do it so fast"]
+                            fallback_pool = [
+                                "why so urgent though", "whats the rush", "cant do now",
+                                "give me some time", "what happened suddenly", "nothing before this",
+                                "too sudden for me", "wait a bit", "will call back",
+                                "in a meeting now", "busy right now", "later evening"
+                            ]
                     else:
                         if has_hindi:
-                            options = ["nahi yaar", "bahut zyada pressure", "scary hai", "cant think"]
+                            fallback_pool = [
+                                "bohot pressure hai", "samajh nahi aa raha", "dar lag raha hai",
+                                "kya karoon ab", "help karo", "confuse ho gaya hoon",
+                                "head spin ho raha", "too much yaar", "nahi ho paayega",
+                                "bohot scary hai", "panic ho raha", "kuch samajh nahi"
+                            ]
                         else:
-                            options = ["too much pressure", "this is scary", "I dont know", "stop this"]
-                    decision.replyText = random.choice(options)
-                    
-                elif "otp" in msg_lower or "verify" in msg_lower:
+                            fallback_pool = [
+                                "too much pressure", "not understanding", "getting scared",
+                                "what should I do", "need help", "so confused now",
+                                "head is spinning", "overwhelming", "cant handle this",
+                                "very scary", "panicking now", "nothing makes sense"
+                            ]
+                
+                elif "otp" in msg_lower or "verify" in msg_lower or "pin" in msg_lower:
                     if is_formal:
-                        options = ["why do you need OTP", "verify what exactly", "I already completed verification", "this seems wrong"]
+                        fallback_pool = [
+                            "why OTP needed", "verify what exactly", "completed already",
+                            "seems wrong", "bank policy says no", "wont share OTP",
+                            "fraudsters ask this", "not comfortable", "suspicious request",
+                            "need written confirmation", "call bank myself", "too risky"
+                        ]
                     elif has_hindi:
-                        options = ["OTP kyun chahiye", "verify kya", "kis liye", "banks never ask this", "nahi denge"]
+                        fallback_pool = [
+                            "OTP kisliye chahiye", "verify kya karna hai", "ho gaya pehle",
+                            "galat lag raha", "bank ne bola nahi dene", "nahi dunga",
+                            "fraud hota hai aise", "risky hai yaar", "suspicious hai",
+                            "pehle confirm karoon", "bank ko call karta hoon", "dar lag raha"
+                        ]
                     else:
-                        options = ["why OTP", "verify what", "for what reason", "banks dont ask this", "cant give"]
-                    decision.replyText = random.choice(options)
-                    
+                        fallback_pool = [
+                            "OTP for what reason", "verify what thing", "did it before",
+                            "feels wrong", "bank says dont share", "wont give",
+                            "frauds do this", "too risky", "very suspicious",
+                            "need to confirm", "calling bank now", "getting worried"
+                        ]
+                
                 elif "link" in msg_lower or "http" in msg_lower or "click" in msg_lower:
                     if has_hindi:
-                        options = ["ye link kya hai", "safe hai", "nahi kholenge", "seedha batao", "fake lagta hai"]
+                        fallback_pool = [
+                            "link kya hai ye", "click nahi karunga", "virus ho sakta hai",
+                            "safe nahi lagta", "seedha batao yahan", "link par nahi jaunga",
+                            "fake website ho sakta", "phishing hai kya", "nahi kholunga",
+                            "scary link hai", "risky lagta hai", "direct bolo"
+                        ]
                     else:
-                        options = ["what is this link", "is it safe", "not clicking that", "just tell me directly", "looks fake"]
-                    decision.replyText = random.choice(options)
-                    
-                elif "blocked" in msg_lower or "locked" in msg_lower:
+                        fallback_pool = [
+                            "what is this link", "not clicking that", "could be virus",
+                            "doesnt look safe", "tell me here directly", "wont open links",
+                            "might be fake site", "is it phishing", "not opening",
+                            "scary looking link", "seems risky", "just tell me"
+                        ]
+                
+                elif "blocked" in msg_lower or "locked" in msg_lower or "suspend" in msg_lower:
                     if turn_count < 2:
                         if has_hindi:
-                            options = ["blocked kyun hoga", "maine kya kiya", "what happened", "kab hua ye", "sure ho tum"]
+                            fallback_pool = [
+                                "block kyun hoga", "locked kaise", "maine kya kiya galat",
+                                "kab hua ye", "mujhe nahi pata", "sure ho tum",
+                                "confirm kar lo", "galti se toh nahi", "account toh theek hai",
+                                "abhi toh use kiya", "koi problem nahi thi", "check karo phir se"
+                            ]
                         else:
-                            options = ["why would it block", "I didnt do anything", "what happened", "when did this happen", "are you sure"]
+                            fallback_pool = [
+                                "why would it block", "how locked", "what did I do",
+                                "when this happen", "I dont know about", "you sure",
+                                "confirm again", "maybe mistake", "account seems fine",
+                                "used it just now", "no issues before", "check again please"
+                            ]
                     else:
                         if has_hindi:
-                            options = ["oh god", "scary hai yaar", "kya karoon ab", "bahut dar lag raha"]
+                            fallback_pool = [
+                                "oh god block", "scary hai", "kya karoon", "paisa jayega kya",
+                                "sab khatam", "help karo please", "dar lag raha bohot",
+                                "panic ho gaya", "kuch nahi samajh", "what to do now",
+                                "bohot worried", "cant lose money", "family ko kya bataun"
+                            ]
                         else:
-                            options = ["oh god", "this is scary", "what should I do", "Im really worried"]
-                    decision.replyText = random.choice(options)
-                    
+                            fallback_pool = [
+                                "oh no blocked", "this is scary", "what do I do", "will money go",
+                                "everything lost", "help me please", "very scared now",
+                                "panicking badly", "understand nothing", "dont know what",
+                                "really worried", "cant afford loss", "what tell family"
+                            ]
+                
                 else:
+                    # General confusion
                     if is_formal:
-                        options = ["I dont understand", "could you explain", "what is this about", "seems suspicious"]
+                        fallback_pool = [
+                            "I dont understand", "could you clarify", "what is this regarding",
+                            "seems suspicious", "need more information", "not clear to me",
+                            "who authorized this", "verification required", "show credentials"
+                        ]
                     elif has_hindi:
-                        options = ["matlab", "samajh nahi aaya", "kya bol rahe ho", "kaun ho tum", "kyun"]
+                        fallback_pool = [
+                            "samajh nahi aaya", "matlab kya hai", "ye kya hai",
+                            "kaun ho tum", "kya chahiye", "kyun bol rahe ho",
+                            "confuse ho gaya", "kuch clear nahi", "explain karo"
+                        ]
                     else:
-                        options = ["what do you mean", "I dont get it", "what are you saying", "who are you", "why me"]
-                    decision.replyText = random.choice(options)
+                        fallback_pool = [
+                            "dont get it", "what you mean", "what is this about",
+                            "who are you exactly", "what you want", "why saying this",
+                            "very confused", "nothing clear", "explain properly"
+                        ]
+                
+                # Pick random from pool
+                if fallback_pool:
+                    decision.replyText = random.choice(fallback_pool)
+                else:
+                    decision.replyText = random.choice(["what", "huh", "kyun", "confused"])
 
 
             intel_count = sum([
@@ -854,35 +926,61 @@ FULL CONVERSATION HISTORY:
 
 
             # ==========================================
-            # POST-PROCESSING: ENFORCE SHORT RESPONSES
+            # POST-PROCESSING: PREVENT REPETITION & BAD PATTERNS
             # ==========================================
-            reply_words = decision.replyText.split()
             
-            # If response is too long (>10 words), truncate or replace
+            # Remove asterisk patterns (AI analytical behavior)
+            if '*and*' in decision.replyText.lower() or '*' in decision.replyText:
+                logger.warning(f"⚠️ Detected asterisk pattern, replacing: {decision.replyText}")
+                decision.replyText = random.choice([
+                    "wait what", "this is confusing", "too much", "oh god",
+                    "scary", "I dont know", "what happening", "help"
+                ])
+            
+            # Check for "again" pattern violations
+            if "again" in decision.replyText.lower() and "?" in decision.replyText:
+                logger.warning(f"⚠️ Detected 'again?' pattern, replacing: {decision.replyText}")
+                decision.replyText = random.choice([
+                    "wait", "huh", "what", "confused", "scary hai",
+                    "oh no", "this is bad", "dont understand"
+                ])
+            
+            # NEW: Check if response is duplicate of recent responses
+            if decision.replyText in self.recent_responses:
+                logger.warning(f"⚠️ Duplicate response detected: {decision.replyText}")
+                # Try to find a different response from history that hasn't been used
+                available_alternatives = [
+                    "wait", "what happened", "kyun", "who are you",
+                    "this wrong", "confused yaar", "scary", "oh god",
+                    "dont know", "help me", "what to do", "not sure",
+                    "seems fake", "cant do", "too risky", "nahi yaar"
+                ]
+                # Filter out recently used ones
+                unused = [r for r in available_alternatives if r not in self.recent_responses]
+                if unused:
+                    decision.replyText = random.choice(unused)
+                else:
+                    # If all used, pick random and clear history
+                    decision.replyText = random.choice(available_alternatives)
+                    self.recent_responses = []
+            
+            # Add current response to history
+            self.recent_responses.append(decision.replyText)
+            # Keep only last 8 responses
+            if len(self.recent_responses) > 8:
+                self.recent_responses.pop(0)
+            
+            # If response too long (>10 words), shorten intelligently
+            reply_words = decision.replyText.split()
             if len(reply_words) > 10:
                 logger.warning(f"⚠️ Response too long ({len(reply_words)} words), shortening")
-                
-                # Try to extract first short fragment
-                if len(reply_words) <= 5:
-                    decision.replyText = " ".join(reply_words[:5])
-                else:
-                    # Replace with a context-appropriate short fallback
-                    msg_lower = incoming_msg.lower()
-                    if "otp" in msg_lower or "pin" in msg_lower:
-                        decision.replyText = random.choice(["Wait OTP?", "This seems wrong...", "I'm confused yaar", "Not sure about this"])
-                    elif "urgent" in msg_lower or "immediately" in msg_lower:
-                        decision.replyText = random.choice(["Too fast yaar", "Slow down", "Why so urgent?", "I need time"])
-                    elif "blocked" in msg_lower or "locked" in msg_lower:
-                        decision.replyText = random.choice(["Blocked? Why?", "What happened?", "Oh god...", "This is scary"])
-                    else:
-                        decision.replyText = random.choice(["Wait what?", "I don't know...", "Who are you?", "This feels wrong"])
+                # Take first 5-7 words
+                decision.replyText = " ".join(reply_words[:random.randint(5, 7)])
             
-            # Vary punctuation if response ends with question mark too often
-            if decision.replyText.endswith("?"):
-                # 50% chance to change punctuation to add variety
-                if random.random() < 0.5:
-                    endings = ["", "...", ".", "!"]
-                    decision.replyText = decision.replyText[:-1] + random.choice(endings)
+            # Vary punctuation if too monotonous
+            if decision.replyText.endswith("?") and random.random() < 0.4:
+                endings = ["", "...", ".", "!"]
+                decision.replyText = decision.replyText[:-1] + random.choice(endings)
             
             return decision
 
@@ -892,23 +990,21 @@ FULL CONVERSATION HISTORY:
 
 
             # Even if LLM fails, run regex extraction on raw text
-            combined_text = incoming_msg + " " + json.dumps(history)
+            fallback_intel = ExtractedIntelligence()
             
             upi_pattern = r"[a-zA-Z0-9.\-_]{2,}@(?:upi|paytm|gpay|phonepe|ybl|okicici|okhdfcbank|oksbi|okaxis|icici|hdfc|sbi|axis|pbl|fbl|rbl|aiml|ezetpay|axi)\b"
             url_pattern = r"https?://(?!generativelanguage\.googleapis\.com)[^\s\]\"']+"
             phone_pattern = r"\b\d{10}\b"
             
-            fallback_intel = ExtractedIntelligence()
-            
-            for upi in re.findall(upi_pattern, combined_text):
+            for upi in re.findall(upi_pattern, incoming_msg):
                 if upi not in fallback_intel.upiIds:
                     fallback_intel.upiIds.append(upi)
             
-            for link in re.findall(url_pattern, combined_text):
+            for link in re.findall(url_pattern, incoming_msg):
                 if link not in fallback_intel.phishingLinks:
                     fallback_intel.phishingLinks.append(link)
             
-            for phone in re.findall(phone_pattern, combined_text):
+            for phone in re.findall(phone_pattern, incoming_msg):
                 if phone not in fallback_intel.phoneNumbers:
                     fallback_intel.phoneNumbers.append(phone)
 
@@ -917,58 +1013,12 @@ FULL CONVERSATION HISTORY:
                 scamDetected=True,
                 conversationStatus="ONGOING",
                 replyText=random.choice([
-                    # Pure emotion (1-2 words)
-                    "Wait...",
-                    "What?",
-                    "Arrey!",
-                    "Huh?",
-                    "Oh god",
-                    "No way",
-                    
-                    # Confusion (2-4 words)
-                    "Not sure yaar",
-                    "Samajh nahi aaya",
-                    "Say again?",
-                    "I'm confused",
-                    
-                    # Hesitation (2-4 words)
-                    "Let me think",
-                    "Maybe...",
-                    "I'll see",
-                    "Give me time",
-                    "Umm I don't know",
-                    
-                    # Suspicion (2-5 words)
-                    "This feels wrong",
-                    "Suspicious lagta hai",
-                    "Something is off",
-                    "Nahi don't trust",
-                    
-                    # Questions (2-4 words)
-                    "Who are you",
-                    "Why you need",
-                    "What is this",
-                    "You sure?",
-                    "Kyun chahiye?",
-                    
-                    # Busy/Delay (2-4 words)
-                    "Busy abhi",
-                    "Can't now",
-                    "Not now working",
-                    "Wait in meeting",
-                    
-                    # Fear (2-4 words)
-                    "I'm worried now",
-                    "What will happen",
-                    "This serious?",
-                    "Should I be scared",
-                    
-                    # Soft refusal (2-4 words)
-                    "I don't think so",
-                    "Nahi yaar",
-                    "Can't do",
-                    "Not comfortable"
+                    # Expanded fallback for LLM failures
+                    "wait", "what", "huh", "kyun", "confused",
+                    "oh god", "scary", "nahi", "help", "dont know",
+                    "this wrong", "seems fake", "not sure", "risky",
+                    "who you", "why me", "cant do", "too much"
                 ]),
                 extractedIntelligence=fallback_intel,
-                agentNotes="LLM unavailable (429 rate limit). Flagged as potential scam by default for safety. Regex extraction applied."
+                agentNotes="LLM unavailable. Flagged as potential scam by default for safety. Regex extraction applied."
             )
