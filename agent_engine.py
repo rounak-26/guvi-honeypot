@@ -681,20 +681,72 @@ FULL CONVERSATION HISTORY:
             # -------------------------------------------------
             # 🔒 GUARANTEED DETERMINISTIC EXTRACTION (REQUIRED)
             # -------------------------------------------------
-            combined_text = incoming_msg + " " + json.dumps(history)
-
-
-            # Fixed: Non-capturing group + word boundary so "upi" alone doesn't match
-            upi_pattern = r"[a-zA-Z0-9.\-_]{2,}@(?:upi|paytm|gpay|phonepe|ybl|okicici|okhdfcbank|oksbi|okaxis|icici|hdfc|sbi|axis|pbl|fbl|rbl|aiml|ezetpay|axi)\b"
-
-
-            # Fixed: Exclude Google API URLs and other internal URLs
-            url_pattern = r"https?://(?!generativelanguage\.googleapis\.com)[^\s\]\"']+"
-
-
-            phone_pattern = r"\b\d{10}\b"
             
-            # Extract suspicious keywords
+            # Build set of already extracted intelligence from history
+            already_extracted_upis = set()
+            already_extracted_links = set()
+            already_extracted_phones = set()
+            already_extracted_banks = set()
+            already_extracted_keywords = set()
+
+            # Scan history for already extracted items
+            for turn in history:
+                if isinstance(turn, dict) and 'extractedIntelligence' in turn:
+                    intel = turn['extractedIntelligence']
+                    if 'upiIds' in intel and intel['upiIds']:
+                        already_extracted_upis.update(intel['upiIds'])
+                    if 'phishingLinks' in intel and intel['phishingLinks']:
+                        already_extracted_links.update(intel['phishingLinks'])
+                    if 'phoneNumbers' in intel and intel['phoneNumbers']:
+                        already_extracted_phones.update(intel['phoneNumbers'])
+                    if 'bankAccounts' in intel and intel['bankAccounts']:
+                        already_extracted_banks.update(intel['bankAccounts'])
+                    if 'suspiciousKeywords' in intel and intel['suspiciousKeywords']:
+                        already_extracted_keywords.update(intel['suspiciousKeywords'])
+
+            # Now search ONLY the incoming message for NEW intelligence
+            msg_lower = incoming_msg.lower()
+
+            # UPI pattern
+            upi_pattern = r"[a-zA-Z0-9.\-_]{2,}@(?:upi|paytm|gpay|phonepe|ybl|okicici|okhdfcbank|oksbi|okaxis|icici|hdfc|sbi|axis|pbl|fbl|rbl|aiml|ezetpay|axi)\b"
+            for upi in re.findall(upi_pattern, incoming_msg):
+                if upi not in already_extracted_upis and upi not in decision.extractedIntelligence.upiIds:
+                    decision.extractedIntelligence.upiIds.append(upi)
+
+            # URL pattern
+            url_pattern = r"https?://(?!generativelanguage\.googleapis\.com)[^\s\]\"']+"
+            for link in re.findall(url_pattern, incoming_msg):
+                if link not in already_extracted_links and link not in decision.extractedIntelligence.phishingLinks:
+                    decision.extractedIntelligence.phishingLinks.append(link)
+
+            # Phone pattern (10 digits, with or without +91 prefix)
+            phone_pattern_with_prefix = r"\+91[-\s]?(\d{10})"
+            phone_pattern_plain = r"\b(\d{10})\b"
+
+            # Extract with prefix first
+            for match in re.findall(phone_pattern_with_prefix, incoming_msg):
+                if match not in already_extracted_phones and match not in decision.extractedIntelligence.phoneNumbers:
+                    decision.extractedIntelligence.phoneNumbers.append(match)
+
+            # Then extract plain 10-digit
+            for match in re.findall(phone_pattern_plain, incoming_msg):
+                if match not in already_extracted_phones and match not in decision.extractedIntelligence.phoneNumbers:
+                    decision.extractedIntelligence.phoneNumbers.append(match)
+
+            # Bank account pattern (11-16 digits)
+            bank_account_pattern = r"(?<![0-9])[0-9]{11,16}(?![0-9])"
+            for account in re.findall(bank_account_pattern, incoming_msg):
+                # Skip phone numbers (exactly 10 digits)
+                if len(account) == 10:
+                    continue
+                # Skip if already extracted
+                if account in already_extracted_phones or account in decision.extractedIntelligence.phoneNumbers:
+                    continue
+                # Add if not duplicate
+                if account not in already_extracted_banks and account not in decision.extractedIntelligence.bankAccounts:
+                    decision.extractedIntelligence.bankAccounts.append(account)
+
+            # Extract suspicious keywords (only if not already in list)
             scam_keywords = [
                 "urgent", "immediately", "blocked", "suspended", "verify", "confirm", 
                 "expires", "expire", "expiring", "act now", "limited time", "last chance",
@@ -707,40 +759,10 @@ FULL CONVERSATION HISTORY:
                 "refund", "cashback", "lottery", "scholarship credit", "government subsidy",
                 "aadhaar", "pan card", "kyc", "bank details", "upi id"
             ]
-            
-            msg_lower = incoming_msg.lower()
+
             for keyword in scam_keywords:
-                if keyword in msg_lower and keyword not in decision.extractedIntelligence.suspiciousKeywords:
+                if keyword in msg_lower and keyword not in already_extracted_keywords and keyword not in decision.extractedIntelligence.suspiciousKeywords:
                     decision.extractedIntelligence.suspiciousKeywords.append(keyword)
-
-
-            for upi in re.findall(upi_pattern, combined_text):
-                if upi not in decision.extractedIntelligence.upiIds:
-                    decision.extractedIntelligence.upiIds.append(upi)
-
-
-            for link in re.findall(url_pattern, combined_text):
-                if link not in decision.extractedIntelligence.phishingLinks:
-                    decision.extractedIntelligence.phishingLinks.append(link)
-
-
-            for phone in re.findall(phone_pattern, combined_text):
-                if phone not in decision.extractedIntelligence.phoneNumbers:
-                    decision.extractedIntelligence.phoneNumbers.append(phone)
-            
-            # Bank account extraction - ONLY from incoming message to avoid timestamps
-            # Indian bank accounts: 11-16 digits typically
-            bank_account_pattern = r"(?<![0-9])[0-9]{11,16}(?![0-9])"
-            for account in re.findall(bank_account_pattern, incoming_msg):  # Only search incoming message
-                # Skip phone numbers (exactly 10 digits)
-                if len(account) == 10:
-                    continue
-                # Skip if already in phone numbers
-                if account in decision.extractedIntelligence.phoneNumbers:
-                    continue
-                # Add if not duplicate
-                if account not in decision.extractedIntelligence.bankAccounts:
-                    decision.extractedIntelligence.bankAccounts.append(account)
 
 
             if decision.scamDetected and not decision.replyText.strip():
@@ -889,12 +911,6 @@ FULL CONVERSATION HISTORY:
             for phone in re.findall(phone_pattern, combined_text):
                 if phone not in fallback_intel.phoneNumbers:
                     fallback_intel.phoneNumbers.append(phone)
-            
-            # Bank accounts only from incoming message
-            bank_account_pattern = r"(?<![0-9])[0-9]{11,16}(?![0-9])"
-            for account in re.findall(bank_account_pattern, incoming_msg):
-                if len(account) != 10 and account not in fallback_intel.bankAccounts:
-                    fallback_intel.bankAccounts.append(account)
 
 
             return AgentDecision(
